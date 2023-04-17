@@ -14,19 +14,22 @@ MenuState::MenuState(App* app) :
 	playlistPaths(),
 	selectedPlaylist(1) // minimum is 1
 {
-	// Set selectedPlaylist:
-	std::map<std::string, std::string> config = core::getConfig("data/config.dat");
-	selectedPlaylist = std::stoi(config["defaultPlaylist"]);
-	if (selectedPlaylist <= 0) {
-		std::cerr << "Error: config.dat::defaultPlaylist may not be less than 1!\n";
-		__debugbreak();
-	}
+	
 }
 
 void MenuState::init()
 {
 	playlistPaths.clear();
 	// selectedPlaylist; // Should be the same as the one that got selected.
+
+	// Set selectedPlaylist:
+	// Do not do this in the constructor, because in App::App I need to check if the directory exists.
+	std::map<std::string, std::string> config = core::getConfig("data/config.dat");
+	selectedPlaylist = std::stoi(config["defaultPlaylist"]);
+	if (selectedPlaylist <= 0) {
+		std::cerr << "Error: config.dat::defaultPlaylist may not be less than 1!\n";
+		__debugbreak();
+	}
 }
 
 void MenuState::terminate()

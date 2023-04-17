@@ -19,9 +19,7 @@ core::Playlist::Playlist() :
 	volume(100), // default
 	fadeOutEnabled(false)
 {
-	if (!fs::exists("music/")) {
-		fs::create_directories("music/");
-	}
+	
 }
 
 void core::Playlist::addNewEntry(std::filesystem::path path)
