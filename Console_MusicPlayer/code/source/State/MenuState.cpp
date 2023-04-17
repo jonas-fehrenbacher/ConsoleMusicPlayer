@@ -84,7 +84,8 @@ void MenuState::handleEvent()
 
 void MenuState::draw()
 {
-	std::cout << core::ColoredStr("Your playlists:", core::Color::Light_Yellow) << std::endl << std::endl;
+	std::cout << core::ColoredStr("Your playlists:", core::Color::Light_Yellow) << "\n";
+	std::cout << core::ColoredStr("(Select and press enter)", core::Color::Gray) << "\n\n";
 	for (int i = 0; i < playlistPaths.size(); ++i) {
 		if (i == selectedPlaylist - 1) {
 			std::cout << (i+1) << ". " << core::ColoredStr(playlistPaths[i].stem().string(), core::Color::Light_Aqua) << "\n";

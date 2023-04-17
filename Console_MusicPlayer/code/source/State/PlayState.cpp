@@ -53,7 +53,8 @@ void PlayState::terminate()
 
 void PlayState::update()
 {
-	if (playlist.isStopped()) {
+	if (playlist.isStopped() && playlist.size() > 0) {
+		// If playlist.size() == 0, then notify user instead of returning to the menu.
 		app->messageBus.send(Message::PlayState_Finished);
 	}
 
@@ -228,63 +229,64 @@ void PlayState::handleEvent()
 void PlayState::draw()
 {
 	if (playlist.size() == 0) {
-		std::cout << "Playlist is empty or music could not be found! Folder music/ is used.\n";
-		return;
+		std::cout << core::ColoredStr("Oooops! There is no music!\n", core::Color::Bright_White);
+		std::cout << "Playlist is empty or music could not be found!\nSearched for music in music/.\n\n";
 	}
+	else {
+		//num:
+		if (playlist.currentNumber() <= playlist.size())
+			std::cout << playlist.currentNumber();
+		else std::cout << playlist.size();
 
-	//num:
-	if (playlist.currentNumber() <= playlist.size())
-		std::cout << playlist.currentNumber();
-	else std::cout << playlist.size();
+		//title
+		std::cout << "/" << playlist.size() << ". " << core::ColoredStr(playlist.current().title, core::Color::Light_Yellow) << ":"
+			<< std::endl << std::endl;
 
-	//title
-	std::cout << "/" << playlist.size() << ". " << core::ColoredStr(playlist.current().title, core::Color::Light_Yellow) << ":"
-		<< std::endl << std::endl;
+		//time:
+		std::cout << "Time:           ";
+		if (playlist.currentMusicElapsedTime().asSeconds() < 60) std::cout << static_cast<unsigned short>(playlist.currentMusicElapsedTime().asSeconds()) << core::ColoredStr("sec", core::Color::Gray);
+		if (playlist.currentMusicElapsedTime().asSeconds() >= 60) std::cout << std::setprecision(3) << playlist.currentMusicElapsedTime().asSeconds() / 60.f << core::ColoredStr("min", core::Color::Gray);
+		std::cout << skipReport << " of " << std::setprecision(3) << playlist.currentMusicDuration().asSeconds() / 60.f << core::ColoredStr("min", core::Color::Gray) << std::endl;
 
-	//time:
-	std::cout << "Time:           ";
-	if (playlist.currentMusicElapsedTime().asSeconds() < 60) std::cout << static_cast<unsigned short>(playlist.currentMusicElapsedTime().asSeconds()) << core::ColoredStr("sec", core::Color::Gray);
-	if (playlist.currentMusicElapsedTime().asSeconds() >= 60) std::cout << std::setprecision(3) << playlist.currentMusicElapsedTime().asSeconds() / 60.f << core::ColoredStr("min", core::Color::Gray);
-	std::cout << skipReport << " of " << std::setprecision(3) << playlist.currentMusicDuration().asSeconds() / 60.f << core::ColoredStr("min", core::Color::Gray) << std::endl;
+		//artist:
+		std::cout << "Artist:         " << playlist.current().artist << std::endl;
 
-	//artist:
-	std::cout << "Artist:         " << playlist.current().artist << std::endl;
+		//volume:			          
+		std::cout << "Volume:         " << playlist.getVolume() << "% " << volumeReport << std::endl;
 
-	//volume:			          
-	std::cout << "Volume:         " << playlist.getVolume() << "% " << volumeReport << std::endl;
+		//state:
+		if (playlist.isPaused())
+			std::cout << "State:          Paused";
+		else if (playlist.isPlaying())
+			std::cout << "State:          Playing";
+		else if (playlist.isStopped())
+			std::cout << "State:          Stopped";
+		if (playlist.currentMusicGetLoop()) std::cout << " [loop]" << std::endl;
+		else
+		{
+			if (playlist.current().playCount == 1)
+				std::cout << " [" << core::ColoredStr("1", core::Color::Bright_White) << " time]" << std::endl;
+			else std::cout << " [" << core::ColoredStr(std::to_string(playlist.current().playCount), core::Color::Bright_White) << " times]" << std::endl;
+		}
 
-	//state:
-	if (playlist.isPaused())
-		std::cout << "State:          Paused";
-	else if (playlist.isPlaying())
-		std::cout << "State:          Playing";
-	else if (playlist.isStopped())
-		std::cout << "State:          Stopped";
-	if (playlist.currentMusicGetLoop()) std::cout << " [loop]" << std::endl;
-	else
-	{
-		if (playlist.current().playCount == 1)
-			std::cout << " [" << core::ColoredStr("1", core::Color::Bright_White) << " time]" << std::endl;
-		else std::cout << " [" << core::ColoredStr(std::to_string(playlist.current().playCount), core::Color::Bright_White) << " times]" << std::endl;
-	}
+		//playlist state:
+		if (playlist.getLoop()) std::cout << "Playlist State: endless" << std::endl;
+		else std::cout << "Playlist State: not endless" << std::endl;
 
-	//playlist state:
-	if (playlist.getLoop()) std::cout << "Playlist State: endless" << std::endl;
-	else std::cout << "Playlist State: not endless" << std::endl;
-
-	//total time:
-	if (totalRunTime.asSeconds() == 0.f)
-		std::cout << "Total runtime:  no limit" << std::endl;
-	else
-	{
-		std::cout << "Total runtime:  ";
-		if (totalRunTimeClock.getElapsedTime().asSeconds() < 60.f)
-			std::cout << static_cast<unsigned short>(totalRunTimeClock.getElapsedTime().asSeconds()) << core::ColoredStr("sec", core::Color::Gray) << " von ";
-		else std::cout << totalRunTimeClock.getElapsedTime().asMinute() << core::ColoredStr("min", core::Color::Gray) << " von ";
-		if (totalRunTime.asSeconds() < 60.f)
-			std::cout << static_cast<unsigned short>(totalRunTime.asSeconds()) << core::ColoredStr("sec", core::Color::Gray);
-		else std::cout << totalRunTime.asSeconds() / 60.f << core::ColoredStr("min", core::Color::Gray);
-		std::cout << std::endl;
+		//total time:
+		if (totalRunTime.asSeconds() == 0.f)
+			std::cout << "Total runtime:  no limit" << std::endl;
+		else
+		{
+			std::cout << "Total runtime:  ";
+			if (totalRunTimeClock.getElapsedTime().asSeconds() < 60.f)
+				std::cout << static_cast<unsigned short>(totalRunTimeClock.getElapsedTime().asSeconds()) << core::ColoredStr("sec", core::Color::Gray) << " von ";
+			else std::cout << totalRunTimeClock.getElapsedTime().asMinute() << core::ColoredStr("min", core::Color::Gray) << " von ";
+			if (totalRunTime.asSeconds() < 60.f)
+				std::cout << static_cast<unsigned short>(totalRunTime.asSeconds()) << core::ColoredStr("sec", core::Color::Gray);
+			else std::cout << totalRunTime.asSeconds() / 60.f << core::ColoredStr("min", core::Color::Gray);
+			std::cout << std::endl;
+		}
 	}
 
 	//lock events:
@@ -314,7 +316,7 @@ void PlayState::draw()
 			<< core::ColoredStr("ESC   => Exit", core::Color::White) << std::endl
 			<< core::ColoredStr("F12   => Lock Events", core::Color::Bright_White) << std::endl;
 	}
-	else std::cout << std::endl << core::ColoredStr("[I=Info]", core::Color::Light_Aqua) << std::endl;
+	else std::cout << std::endl << core::ColoredStr("[Press [I]nfo]", core::Color::Light_Aqua) << std::endl;
 
 	//song order:
 	if (isPrintOrder)
