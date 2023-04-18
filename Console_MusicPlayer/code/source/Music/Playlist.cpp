@@ -5,7 +5,7 @@
 #include <random>
 #include <iostream>
 #include <cassert>
-namespace fs = std::filesystem;
+#include <sstream>
 
 core::Playlist::Playlist() :
 	playlist({}),
@@ -19,7 +19,14 @@ core::Playlist::Playlist() :
 	volume(100), // default
 	fadeOutEnabled(false)
 {
-	
+	// Set music directories:
+	// Example: musicDirs = "music", "C:/Users/Jonas/Music"
+	std::string musicDirs = core::getConfig("data/config.dat")["musicDirs"];
+	for (int end = 0; musicDirs.find("\"", end + 1) != -1;) { // +1 because at the end I need to check for the next occurrence
+		int begin = musicDirs.find("\"", end == 0 ? 0 : end + 1);
+		end = musicDirs.find("\"", begin + 1);
+		this->musicDirs.push_back(musicDirs.substr(begin+1, end - begin - 1));
+	}
 }
 
 void core::Playlist::addNewEntry(std::filesystem::path path)
@@ -89,7 +96,16 @@ void core::Playlist::init(std::filesystem::path playlistPath, int options /*= 0*
 	std::ifstream ifs(playlistPath, std::ios::in);
 
 	while (std::getline(ifs, filename)) {
-		addNewEntry("music/" + filename); // TODO: User can specify multiple folders where music is stored. Find filename in one of them instead of statically using "music/".
+		// Playlist should only hold filenames, so that music files can be moved without editing the playlist file.
+		// Search for music:
+		for (auto& musicDir : musicDirs) {
+			for (auto& it : fs::recursive_directory_iterator(musicDir)) {
+				if (it.path().filename() == filename) {
+					addNewEntry(it.path());
+					// Note: we iterate further, because in the other directory could be a file with the same name.
+				}
+			}
+		}
 	}
 
 	ifs.close();
@@ -97,19 +113,13 @@ void core::Playlist::init(std::filesystem::path playlistPath, int options /*= 0*
 	_init(options);
 }
 
-void core::Playlist::addAll(std::filesystem::path dir)
-{
-	for (auto& it : fs::directory_iterator(dir)) {
-		if (fs::is_directory(it)) {
-			addAll(it.path());
-		}
-		else addNewEntry(it.path());
-	}
-}
-
 void core::Playlist::init(int options /*= 0*/)
 {
-	addAll("music");
+	for (auto& musicDir : musicDirs) {
+		for (auto& it : fs::recursive_directory_iterator(musicDir)) {
+			addNewEntry(it.path());
+		}
+	}
 	_init(options);
 }
 

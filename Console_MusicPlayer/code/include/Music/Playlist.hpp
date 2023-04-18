@@ -4,6 +4,7 @@
 #include <SFML/Audio.hpp>
 #include <string>
 #include <filesystem>
+namespace fs = std::filesystem;
 
 namespace core
 {
@@ -63,20 +64,20 @@ namespace core
 		/* Get number of currently playing music - maximum is size(). This is index + 1. */
 		size_t currentNumber() const;
 	private:
-		std::vector<Entry> playlist;
-		std::string        name;
-		size_t             current_; // index of current playing music
-		bool               loop;
-		sf::Music          music;
-		core::Timer        playtime;
-		Time               oldElapsedTime;
-		bool               fadeOutEnabled;
-		bool               fadeOutActive;
-		float              volume;
+		std::vector<Entry>       playlist;
+		std::string              name;
+		size_t                   current_; // index of current playing music
+		bool                     loop;
+		sf::Music                music;
+		core::Timer              playtime;
+		Time                     oldElapsedTime;
+		bool                     fadeOutEnabled;
+		bool                     fadeOutActive;
+		float                    volume;
+		std::vector<fs::path>    musicDirs; // in this directories I search for music.
 
-		void addNewEntry(std::filesystem::path);
+		void addNewEntry(fs::path);
 		void play(bool next);
 		void _init(int options);
-		void addAll(std::filesystem::path dir);
 	};
 }
