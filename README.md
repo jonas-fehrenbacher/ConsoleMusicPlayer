@@ -14,7 +14,7 @@ just press Enter and the playlist runs. In this mode you can press [I] to see al
 Enjoy!
 
 ## What is done next?
-- Currently, your music has to be directly in music/ - subdirectories are ignored. This needs to be changed.
+- Currently, your music has to be <b>directly in music/</b> - subdirectories are ignored. This needs to be changed.
 - Furthermore, user should be able to specify where he wants the music player to search for the music.
 - I want to add an PlaylistEditor (add, remove music from a playlist and create new ones).
 - Use SDL to read ID3 data
