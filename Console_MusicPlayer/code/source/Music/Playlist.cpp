@@ -31,6 +31,23 @@ void core::Playlist::addNewEntry(std::filesystem::path path)
 		return;
 	}
 
+	// Is music file?:
+	// TODO use SDL!!
+	// See: https://www.sfml-dev.org/tutorials/2.5/audio-sounds.php#:~:text=SFML%20supports%20the%20audio%20file,%3D%20...%3B%20buffer.
+	static const std::vector<std::string> sfmlSupportedExtentions{
+		".wav", ".ogg", ".flac"
+	};
+	bool isSupported = false;
+	for (auto& extention : sfmlSupportedExtentions) {
+		if (path.extension() == extention) {
+			isSupported = true;
+			break;
+		}
+	}
+	if (!isSupported) {
+		return;
+	}
+
 	// TODO: Read artist etc. with SDL2
 	std::string title = path.stem().string();
 	Entry entry;
@@ -80,11 +97,19 @@ void core::Playlist::init(std::filesystem::path playlistPath, int options /*= 0*
 	_init(options);
 }
 
+void core::Playlist::addAll(std::filesystem::path dir)
+{
+	for (auto& it : fs::directory_iterator(dir)) {
+		if (fs::is_directory(it)) {
+			addAll(it.path());
+		}
+		else addNewEntry(it.path());
+	}
+}
+
 void core::Playlist::init(int options /*= 0*/)
 {
-	for (auto& p : fs::directory_iterator("music")) {
-		addNewEntry(p.path());
-	}
+	addAll("music");
 	_init(options);
 }
 

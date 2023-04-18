@@ -77,5 +77,6 @@ namespace core
 		void addNewEntry(std::filesystem::path);
 		void play(bool next);
 		void _init(int options);
+		void addAll(std::filesystem::path dir);
 	};
 }
