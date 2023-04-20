@@ -9,27 +9,32 @@
 
 namespace fs = std::filesystem;
 
+enum {
+	//PLAYLIST_EDITOR = 0,
+	FRONT_PLAYLIST // "all"
+};
+
 MenuState::MenuState(App* app) :
 	app(app),
-	playlistPaths(),
-	selectedPlaylist(1) // minimum is 1
+	options(),
+	selected(1) // minimum is 1
 {
 	
 }
 
 void MenuState::init()
 {
-	playlistPaths.clear();
+	options.clear();
 	// selectedPlaylist; // Should be the same as the one that got selected.
 
-	// Set selectedPlaylist:
+	// Set selected:
 	// Do not do this in the constructor, because in App::App I need to check if the directory exists.
 	std::map<std::string, std::string> config = core::getConfig("data/config.dat");
-	selectedPlaylist = std::stoi(config["defaultPlaylist"]);
-	if (selectedPlaylist <= 0) {
-		std::cerr << "Error: config.dat::defaultPlaylist may not be less than 1!\n";
-		__debugbreak();
-	}
+	selected = std::stoi(config["defaultPlaylist"]);
+	//if (selected <= 0) {
+	//	std::cerr << "Error: config.dat::defaultPlaylist may not be less than 1!\n";
+	//	__debugbreak();
+	//}
 }
 
 void MenuState::terminate()
@@ -41,11 +46,12 @@ void MenuState::update()
 {
 	// Search for playlists:
 	// I'm doing this regularly, so that user can add playlists while program is running.
-	playlistPaths.clear();
-	playlistPaths.push_back("all"); // virtual playlist (plays all music)
+	options.clear();
+	//options.push_back("Playlist editor");
+	options.push_back("all"); // virtual playlist (plays all music)
 	for (auto& it : fs::directory_iterator("data")) {
 		if (it.is_regular_file() && it.path().extension() == ".pl") {
-			playlistPaths.push_back(it.path());
+			options.push_back(it.path().stem().string());
 		}
 	}
 }
@@ -53,58 +59,70 @@ void MenuState::update()
 void MenuState::handleEvent()
 {
 	if (core::inputDevice::isKeyPressed(VK_RETURN)) {
-		app->messageBus.send(Message::MenuState_EnteredPlaylist);
-
-		// Update config:
-		std::map<std::string, std::string> config = core::getConfig("data/config.dat");
-		config["defaultPlaylist"] = std::to_string(selectedPlaylist);
-		core::setConfig("data/config.dat", config);
+		// Play playlist:
+		if (selected >= FRONT_PLAYLIST) {
+			app->messageBus.send(Message::MenuState_EnteredPlaylist);
+			// Update config:
+			std::map<std::string, std::string> config = core::getConfig("data/config.dat");
+			config["defaultPlaylist"] = std::to_string(selected);
+			core::setConfig("data/config.dat", config);
+		}
+		else {
+			app->messageBus.send(Message::MenuState_SelectedPlaylistEditor);
+		}
 	}
 
+	// Number input:
 	for (int i = '0'; i <= '9'; ++i) {
 		if (i > '0' && core::inputDevice::isKeyPressed(i)) {
 			// Playlists are listed from number 1.
-			selectedPlaylist = i - '0';
+			selected = FRONT_PLAYLIST + (i - '0');
 		}
 	}
 
 	if (core::inputDevice::isKeyPressed(VK_UP)) {
 		// Playlists are listed from number 1.
-		--selectedPlaylist;
-		if (selectedPlaylist < 1) {
-			selectedPlaylist = playlistPaths.size();
+		--selected;
+		if (selected < 0) {
+			selected = options.size() - 1;
 		}
 	}
 
 	if (core::inputDevice::isKeyPressed(VK_DOWN)) {
 		// Playlists are listed from number 1.
-		++selectedPlaylist;
-		if (selectedPlaylist > playlistPaths.size()) {
-			selectedPlaylist = 1;
+		++selected;
+		if (selected >= options.size()) {
+			selected = 0;
 		}
 	}
 }
 
 void MenuState::draw()
 {
-	std::cout << core::ColoredStr("Your playlists:", core::Color::Light_Yellow) << "\n";
+	std::cout << core::ColoredStr("Select options:", core::Color::Light_Yellow) << "\n";
 	std::cout << core::ColoredStr("(Select and press enter)", core::Color::Gray) << "\n\n";
-	for (int i = 0; i < playlistPaths.size(); ++i) {
-		if (i == selectedPlaylist - 1) {
-			std::cout << (i+1) << ". " << core::ColoredStr(playlistPaths[i].stem().string(), core::Color::Light_Aqua) << "\n";
+
+	for (int i = 0; i < options.size(); ++i) {
+		if (i >= FRONT_PLAYLIST) {
+			std::cout << (i - (FRONT_PLAYLIST - 1)) << " ";
 		}
 		else {
-			std::cout << (i+1) << ". " << core::ColoredStr(playlistPaths[i].stem().string(), core::Color::White) << "\n";
+			std::cout << "> ";
 		}
-		
+		if (i == selected) {
+			std::cout << core::ColoredStr(options[i], core::Color::Light_Aqua) << "\n";
+		}
+		else {
+			std::cout << core::ColoredStr(options[i], core::Color::White) << "\n";
+		}
 	}
 }
 
 std::filesystem::path MenuState::getPlaylistPath()
 {
-	if (selectedPlaylist <= 0 || selectedPlaylist > playlistPaths.size()) {
-		selectedPlaylist = 1;
+	if (selected < FRONT_PLAYLIST || selected >= options.size()) {
+		selected = FRONT_PLAYLIST;
 		__debugbreak();
 	}
-	return playlistPaths[selectedPlaylist - 1];
+	return "data/" + options[selected] + ".pl";
 }

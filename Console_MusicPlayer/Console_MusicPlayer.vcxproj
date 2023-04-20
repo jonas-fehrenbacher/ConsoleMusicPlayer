@@ -75,12 +75,14 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)Console_MusicPlayer\code\include;$(SolutionDir)SFML-2.5.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Console_MusicPlayer\code\include;$(SolutionDir)SDL2-2.26.5-VC\include;$(SolutionDir)SDL2_mixer-2.6.3-VC\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>$(SolutionDir)SFML-2.5.1\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>sfml-main.lib;sfml-audio-d.lib;sfml-graphics-d.lib;sfml-network-d.lib;sfml-system-d.lib;sfml-window-d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)SDL2-2.26.5-VC\lib\x86;$(SolutionDir)SDL2_mixer-2.6.3-VC\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>SDL2main.lib;SDL2.lib;SDL2_mixer.lib;User32.lib;Shell32.lib</AdditionalDependencies>
+      <SubSystem>Console</SubSystem>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -89,7 +91,14 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)Console_MusicPlayer\code\include;$(SolutionDir)SDL2-2.26.5-VC\include;$(SolutionDir)SDL2_mixer-2.6.3-VC\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>$(SolutionDir)SDL2-2.26.5-VC\lib\x64;$(SolutionDir)SDL2_mixer-2.6.3-VC\lib\x64</AdditionalLibraryDirectories>
+      <AdditionalDependencies>SDL2main.lib;SDL2.lib;SDL2_mixer.lib;User32.lib;Shell32.lib</AdditionalDependencies>
+      <SubSystem>Console</SubSystem>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -98,14 +107,16 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)Console_MusicPlayer\code\include;$(SolutionDir)SFML-2.5.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Console_MusicPlayer\code\include;$(SolutionDir)SDL2-2.26.5-VC\include;$(SolutionDir)SDL2_mixer-2.6.3-VC\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>$(SolutionDir)SFML-2.5.1\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>sfml-main.lib;sfml-audio.lib;sfml-graphics.lib;sfml-network.lib;sfml-system.lib;sfml-window.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)SDL2-2.26.5-VC\lib\x86;$(SolutionDir)SDL2_mixer-2.6.3-VC\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>SDL2main.lib;SDL2.lib;SDL2_mixer.lib;User32.lib;Shell32.lib</AdditionalDependencies>
+      <SubSystem>Console</SubSystem>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -116,10 +127,15 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)Console_MusicPlayer\code\include;$(SolutionDir)SDL2-2.26.5-VC\include;$(SolutionDir)SDL2_mixer-2.6.3-VC\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>$(SolutionDir)SDL2-2.26.5-VC\lib\x64;$(SolutionDir)SDL2_mixer-2.6.3-VC\lib\x64</AdditionalLibraryDirectories>
+      <AdditionalDependencies>SDL2main.lib;SDL2.lib;SDL2_mixer.lib;User32.lib;Shell32.lib</AdditionalDependencies>
+      <SubSystem>Console</SubSystem>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -128,6 +144,7 @@
     <ClCompile Include="code\source\Messages\MessageBus.cpp" />
     <ClCompile Include="code\source\Music\Playlist.cpp" />
     <ClCompile Include="code\source\State\MenuState.cpp" />
+    <ClCompile Include="code\source\State\PlaylistEditorState.cpp" />
     <ClCompile Include="code\source\State\PlayState.cpp" />
     <ClCompile Include="code\source\State\StateMachine.cpp" />
     <ClCompile Include="code\source\Timer\Time.cpp" />
@@ -142,6 +159,7 @@
     <ClInclude Include="code\include\Message\Messages.hpp" />
     <ClInclude Include="code\include\Music\Playlist.hpp" />
     <ClInclude Include="code\include\State\MenuState.hpp" />
+    <ClInclude Include="code\include\State\PlaylistEditorState.hpp" />
     <ClInclude Include="code\include\State\PlayState.hpp" />
     <ClInclude Include="code\include\State\StateMachine.hpp" />
     <ClInclude Include="code\include\Timer\Time.hpp" />
@@ -152,8 +170,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="data\config.dat" />
-    <None Include="data\mix.pl" />
-    <None Include="data\short.pl" />
+    <None Include="data\Loben1.pl" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="data\log.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

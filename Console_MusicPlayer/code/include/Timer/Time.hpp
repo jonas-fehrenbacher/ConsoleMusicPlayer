@@ -73,6 +73,8 @@ namespace core
 
 		Time& operator+=(const Time& rhs);
 		Time& operator-=(const Time& rhs);
+		Time& operator+=(const Duration& rhs);
+		Time& operator-=(const Duration& rhs);
 		Time& operator=(Time rhs);
 		Time& operator=(Duration rhs);
 	private:

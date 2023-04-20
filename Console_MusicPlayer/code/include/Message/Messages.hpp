@@ -5,5 +5,7 @@
 enum Message
 {
 	MenuState_EnteredPlaylist,
-	PlayState_Finished
+	MenuState_SelectedPlaylistEditor,
+	PlayState_Finished,
+	PlaylistEditorState_Finished
 };

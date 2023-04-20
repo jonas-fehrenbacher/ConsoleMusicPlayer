@@ -226,11 +226,45 @@ void PlayState::handleEvent()
 	}
 }
 
+std::string getTimeStr(core::Time time, core::Time limit = 0ns)
+{
+	if (limit == 0s) {
+		limit = time;
+	}
+
+	bool hasHours = false;
+	bool hasMinutes = false;
+	std::string timeStr = "";
+	if (static_cast<int>(limit.asHour()) > 0) {
+		int hours = (int)time.asHour();
+		timeStr += std::to_string(hours) + ":";
+		time -= core::Hours((int)time.asHour());
+		hasHours = true;
+	}
+	if (static_cast<int>(limit.asMinute()) > 0) {
+		int minutes = (int)time.asMinute();
+		timeStr += (hasHours && minutes < 10 ? "0" : "") + std::to_string(minutes) + ":";
+		time -= core::Minutes((int)time.asMinute());
+		hasMinutes = true;
+	}
+	if (static_cast<int>(limit.asSeconds()) > 0) { // note: don't do time > 0s, because an 1min song has at this point time==0
+		int seconds = (int)time.asSeconds();
+		timeStr += (hasMinutes && seconds < 10 ? "0" : "") + std::to_string(seconds);
+		time -= core::Seconds((int)time.asSeconds());
+	}
+	return timeStr;
+}
+
 void PlayState::draw()
 {
 	if (playlist.size() == 0) {
 		std::cout << core::ColoredStr("Oooops! There is no music!\n", core::Color::Bright_White);
-		std::cout << "Playlist is empty or music could not be found!\nSearched for music in music/.\n\n";
+		std::cout << "Playlist is empty or music could not be found!\nSearched for music in:\n";
+		std::vector<fs::path> musicDirs = playlist.getMusicDirs();
+		for (auto& musicDir : musicDirs) {
+			std::cout << "- " << musicDir << "\n";
+		}
+		std::cout << "\n";
 	}
 	else {
 		//num:
@@ -244,12 +278,17 @@ void PlayState::draw()
 
 		//time:
 		std::cout << "Time:           ";
-		if (playlist.currentMusicElapsedTime().asSeconds() < 60) std::cout << static_cast<unsigned short>(playlist.currentMusicElapsedTime().asSeconds()) << core::ColoredStr("sec", core::Color::Gray);
-		if (playlist.currentMusicElapsedTime().asSeconds() >= 60) std::cout << std::setprecision(3) << playlist.currentMusicElapsedTime().asSeconds() / 60.f << core::ColoredStr("min", core::Color::Gray);
-		std::cout << skipReport << " of " << std::setprecision(3) << playlist.currentMusicDuration().asSeconds() / 60.f << core::ColoredStr("min", core::Color::Gray) << std::endl;
+		std::cout << getTimeStr(playlist.currentMusicElapsedTime(), playlist.currentMusicDuration());
+		std::cout << skipReport << " of " << getTimeStr(playlist.currentMusicDuration()) << std::endl;
+		//if (playlist.currentMusicElapsedTime().asSeconds() < 60) std::cout << static_cast<unsigned short>(playlist.currentMusicElapsedTime().asSeconds()) << core::ColoredStr("sec", core::Color::Gray);
+		//if (playlist.currentMusicElapsedTime().asSeconds() >= 60) std::cout << std::setprecision(3) << playlist.currentMusicElapsedTime().asSeconds() / 60.f << core::ColoredStr("min", core::Color::Gray);
+		//std::cout << skipReport << " of " << std::setprecision(3) << playlist.currentMusicDuration().asSeconds() / 60.f << core::ColoredStr("min", core::Color::Gray) << std::endl;
 
 		//artist:
 		std::cout << "Artist:         " << playlist.current().artist << std::endl;
+
+		//album:
+		std::cout << "Album:          " << playlist.current().album << std::endl;
 
 		//volume:			          
 		std::cout << "Volume:         " << playlist.getVolume() << "% " << volumeReport << std::endl;

@@ -3,6 +3,7 @@
 #include <map>
 #include <string>
 #include <filesystem>
+namespace fs = std::filesystem;
 
 namespace core
 {
@@ -20,4 +21,10 @@ namespace core
 	void setConfig(std::filesystem::path path, const std::map<std::string, std::string>& config);
 	/* File must contain in each line: varName=varValue. */
 	std::map<std::string, std::string> getConfig(std::filesystem::path path);
+	std::vector<std::string> getConfigStrArr(std::string array);
+	std::vector<fs::path> getConfigPathArr(std::string array);
+
+	bool isSupportedAudioFile(fs::path filepath);
+
+	void log(std::string message);
 }

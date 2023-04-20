@@ -19,7 +19,7 @@ public:
     /* Playlist all is a virtual playlist which plays all music there is. */
     std::filesystem::path getPlaylistPath();
 private:
-    App*                               app;
-    std::vector<std::filesystem::path> playlistPaths;
-    int                                selectedPlaylist;
+    App*                     app;
+    std::vector<std::string> options;
+    int                      selected;
 };

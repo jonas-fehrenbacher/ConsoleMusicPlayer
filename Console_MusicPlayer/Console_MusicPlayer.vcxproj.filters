@@ -81,6 +81,9 @@
     <ClCompile Include="code\source\Tools\ColoredStr.cpp">
       <Filter>Quelldateien\Tools</Filter>
     </ClCompile>
+    <ClCompile Include="code\source\State\PlaylistEditorState.cpp">
+      <Filter>Quelldateien\State</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="code\include\Timer\Time.hpp">
@@ -119,16 +122,21 @@
     <ClInclude Include="code\include\Tools\ColoredStr.hpp">
       <Filter>Headerdateien\Tools</Filter>
     </ClInclude>
+    <ClInclude Include="code\include\State\PlaylistEditorState.hpp">
+      <Filter>Headerdateien\State</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="data\config.dat">
       <Filter>Ressourcendateien</Filter>
     </None>
-    <None Include="data\mix.pl">
+    <None Include="data\Loben1.pl">
       <Filter>Ressourcendateien</Filter>
     </None>
-    <None Include="data\short.pl">
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="data\log.txt">
       <Filter>Ressourcendateien</Filter>
-    </None>
+    </Text>
   </ItemGroup>
 </Project>

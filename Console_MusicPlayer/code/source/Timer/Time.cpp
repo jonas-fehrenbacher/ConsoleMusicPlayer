@@ -21,7 +21,7 @@ namespace core
 
 	long double Time::asHour() const
 	{
-		return static_cast<long double>(time.count()) / 1e9 / 120.f;
+		return static_cast<long double>(time.count()) / 1e9 / 60.0 / 60.0;
 	}
 
 	long double Time::asMinute() const
@@ -63,6 +63,18 @@ namespace core
 	Time& Time::operator-=(const Time& rhs)
 	{
 		time -= rhs.get();
+		return *this;
+	}
+
+	Time& Time::operator+=(const Duration& rhs)
+	{
+		time += rhs;
+		return *this;
+	}
+
+	Time& Time::operator-=(const Duration& rhs)
+	{
+		time -= rhs;
 		return *this;
 	}
 

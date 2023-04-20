@@ -1,7 +1,8 @@
 #pragma once
 
 #include "Timer/Timer.hpp"
-#include <SFML/Audio.hpp>
+#include <SDL.h>
+#include <SDL_mixer.h>
 #include <string>
 #include <filesystem>
 namespace fs = std::filesystem;
@@ -16,6 +17,8 @@ namespace core
 			std::filesystem::path path;
 			std::string           title;
 			std::string           artist;
+			std::string           album;
+			Time                  duration;
 			unsigned long         playCount; // How many times in a row should this be played?
 		};
 
@@ -63,18 +66,20 @@ namespace core
 		const Entry& current() const;
 		/* Get number of currently playing music - maximum is size(). This is index + 1. */
 		size_t currentNumber() const;
+		std::vector<fs::path> getMusicDirs() const;
 	private:
 		std::vector<Entry>       playlist;
 		std::string              name;
 		size_t                   current_; // index of current playing music
 		bool                     loop;
-		sf::Music                music;
+		Mix_Music*               music;
 		core::Timer              playtime;
 		Time                     oldElapsedTime;
 		bool                     fadeOutEnabled;
 		bool                     fadeOutActive;
 		float                    volume;
 		std::vector<fs::path>    musicDirs; // in this directories I search for music.
+		bool                     currentMusicLoop;
 
 		void addNewEntry(fs::path);
 		void play(bool next);

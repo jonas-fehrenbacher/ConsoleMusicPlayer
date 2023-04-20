@@ -6,6 +6,8 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <algorithm>
+#include <cctype>
 
 bool core::hasFlag(int flag, int flagList)
 {
@@ -150,14 +152,63 @@ std::map<std::string, std::string> core::getConfig(std::filesystem::path path)
 
 	while (std::getline(ifs, line))
 	{
-		line.erase(std::remove_if(line.begin(), line.end(), isspace), line.end()); // remove spaces
+		// Note: Spaces may not be removed on 'line', because strings can contain spaces (e.g. paths).
 		std::string varName = line.substr(0, line.find('='));
-		std::string varValue = line.substr(line.find('=') + 1);
+		varName.erase(std::remove_if(varName.begin(), varName.end(), isspace), varName.end()); // remove spaces
+		int varValueIndex = line.find('=') + 1;
+		for (; line[varValueIndex] == ' '; ++varValueIndex);
+		std::string varValue = line.substr(varValueIndex);
 		config.insert(std::pair<std::string, std::string>(varName, varValue));
 	}
 	ifs.close();
 
 	return config;
+}
+
+std::vector<std::string> core::getConfigStrArr(std::string strarr)
+{
+	// Example: musicDirs = "music", "C:/Users/Jonas/Music"
+	std::vector<std::string> arr;
+	for (int end = 0; strarr.find("\"", end + 1) != -1;) { // +1 because at the end I need to check for the next occurrence
+		int begin = strarr.find("\"", end == 0 ? 0 : end + 1);
+		end = strarr.find("\"", begin + 1);
+		arr.push_back(strarr.substr(begin + 1, end - begin - 1));
+	}
+	return arr;
+}
+
+std::vector<fs::path> core::getConfigPathArr(std::string strarr)
+{
+	std::vector<fs::path> pathArr;
+	std::vector<std::string> arr = getConfigStrArr(strarr);
+	std::transform(arr.begin(), arr.end(), std::back_inserter(pathArr),
+		[](const std::string& str) { return str; });
+	return pathArr;
+}
+
+bool core::isSupportedAudioFile(fs::path filepath)
+{
+	static const std::vector<std::string> sdlSupportedExtentions{
+		".flac", ".mp3", ".ogg", ".voc", ".wav", ".midi", ".mod", ".opus"
+	};
+	std::string audioFormat = filepath.extension().string();
+	std::transform(audioFormat.begin(), audioFormat.end(), audioFormat.begin(),
+		[](unsigned char c) { return std::tolower(c); }); // e.g. .WAV is also valid
+	bool isSupported = false;
+	for (auto& sdlSupportedExtention : sdlSupportedExtentions) {
+		if (audioFormat == sdlSupportedExtention) {
+			isSupported = true;
+			break;
+		}
+	}
+	return isSupported;
+}
+
+void core::log(std::string message)
+{
+	std::ofstream ofs("data/log.txt", std::ios_base::app);
+	ofs << message << "\n";
+	ofs.close();
 }
 
 static COORD getScreenSize()
@@ -181,4 +232,20 @@ static void setConsoleColor(core::Color bg, core::Color fg)
 	hex_fgcolor << std::hex << (int)fg;
 	std::string cmd = "color " + hex_bgcolor.str() + hex_fgcolor.str();
 	system(cmd.c_str());
+}
+
+static void createConsole()
+{
+	// Could be handy if using SDL2, which has by default no console.
+	if (GetConsoleWindow() == NULL)
+	{
+		if (AllocConsole())
+		{
+			(void)freopen("CONIN$", "r", stdin);
+			(void)freopen("CONOUT$", "w", stdout);
+			(void)freopen("CONOUT$", "w", stderr);
+	
+			SetFocus(GetConsoleWindow());
+		}
+	}
 }

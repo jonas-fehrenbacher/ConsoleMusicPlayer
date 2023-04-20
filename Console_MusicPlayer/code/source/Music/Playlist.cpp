@@ -5,7 +5,6 @@
 #include <random>
 #include <iostream>
 #include <cassert>
-#include <sstream>
 
 core::Playlist::Playlist() :
 	playlist({}),
@@ -17,52 +16,43 @@ core::Playlist::Playlist() :
 	oldElapsedTime(0s),
 	fadeOutActive(false),
 	volume(100), // default
-	fadeOutEnabled(false)
+	fadeOutEnabled(false),
+	currentMusicLoop(false)
 {
-	// Set music directories:
-	// Example: musicDirs = "music", "C:/Users/Jonas/Music"
-	std::string musicDirs = core::getConfig("data/config.dat")["musicDirs"];
-	for (int end = 0; musicDirs.find("\"", end + 1) != -1;) { // +1 because at the end I need to check for the next occurrence
-		int begin = musicDirs.find("\"", end == 0 ? 0 : end + 1);
-		end = musicDirs.find("\"", begin + 1);
-		this->musicDirs.push_back(musicDirs.substr(begin+1, end - begin - 1));
-	}
+	
 }
 
 void core::Playlist::addNewEntry(std::filesystem::path path)
 {
 	if (!fs::exists(path)) {
-		std::ofstream ofs("data/log.txt", std::ios_base::app);
-		ofs << "File (" << path.string() << ") not found!\n";
-		ofs.close();
+		log("File (" + path.string() + ") not found!\n");
 		return;
 	}
 
 	// Is music file?:
-	// TODO use SDL!!
-	// See: https://www.sfml-dev.org/tutorials/2.5/audio-sounds.php#:~:text=SFML%20supports%20the%20audio%20file,%3D%20...%3B%20buffer.
-	static const std::vector<std::string> sfmlSupportedExtentions{
-		".wav", ".ogg", ".flac"
-	};
-	bool isSupported = false;
-	for (auto& extention : sfmlSupportedExtentions) {
-		if (path.extension() == extention) {
-			isSupported = true;
-			break;
-		}
-	}
-	if (!isSupported) {
+	if (!isSupportedAudioFile(path)) {
 		return;
 	}
 
-	// TODO: Read artist etc. with SDL2
-	std::string title = path.stem().string();
+	// Open music to get its metadata:
+	Mix_Music* music = Mix_LoadMUS(path.make_preferred().string().c_str());
+	if (!music) {
+		log("Failed to load music! SDL_mixer Error: " + std::string(Mix_GetError()) + "\n");
+		//__debugbreak();
+		return;
+	}
+
+	std::string filenameStem = path.stem().string();
 	Entry entry;
-	entry.path = path.string();
-	entry.title = title;
-	entry.artist = "unknown";
+	entry.path = path.make_preferred().string();
+	std::string sdlTitle = Mix_GetMusicTitle(music);
+	entry.title = strcmp(Mix_GetMusicTitle(music), "") == 0? filenameStem : Mix_GetMusicTitle(music); // SDL2 does not return filename as mentioned, so I do it manually.
+	entry.artist = strcmp(Mix_GetMusicArtistTag(music), "") == 0 ? "unknown" : Mix_GetMusicTitle(music);
+	entry.album = strcmp(Mix_GetMusicAlbumTag(music), "") == 0 ? "unknown" : Mix_GetMusicTitle(music);
+	entry.duration = Time(Seconds((int)Mix_MusicDuration(music))); // IMPORTANT!: needs to be set once. IF this is called frequently, then the played music stutters!!!
 	entry.playCount = 1;
 	playlist.push_back(entry);
+	Mix_FreeMusic(music);
 }
 
 void core::Playlist::shuffle()
@@ -82,14 +72,17 @@ void core::Playlist::shuffle()
 
 void core::Playlist::init(std::filesystem::path playlistPath, int options /*= 0*/)
 {
-	if (playlistPath.empty() || playlistPath == "all") {
-		init();
+	if (playlistPath.empty() || playlistPath == "data/all.pl") {
+		init(options);
 		return;
 	}
 	else if (!fs::exists(playlistPath)) {
 		std::cout << "Error: Playlist (" << playlistPath << ") not found!\n";
 		system("PAUSE");
 	}
+
+	// Set music directories:
+	musicDirs = core::getConfigPathArr(core::getConfig("data/config.dat")["musicDirs"]);
 
 	name = playlistPath.filename().string();
 	std::string   filename;
@@ -101,7 +94,7 @@ void core::Playlist::init(std::filesystem::path playlistPath, int options /*= 0*
 		for (auto& musicDir : musicDirs) {
 			for (auto& it : fs::recursive_directory_iterator(musicDir)) {
 				if (it.path().filename() == filename) {
-					addNewEntry(it.path());
+					addNewEntry(it.path().u8string()); // IMPORTANT use here u8string to support unicode filepaths (addNewEntry can use just .string())!
 					// Note: we iterate further, because in the other directory could be a file with the same name.
 				}
 			}
@@ -115,9 +108,17 @@ void core::Playlist::init(std::filesystem::path playlistPath, int options /*= 0*
 
 void core::Playlist::init(int options /*= 0*/)
 {
+	// Set music directories:
+	musicDirs = core::getConfigPathArr(core::getConfig("data/config.dat")["musicDirs"]);
+
 	for (auto& musicDir : musicDirs) {
-		for (auto& it : fs::recursive_directory_iterator(musicDir)) {
-			addNewEntry(it.path());
+		if (fs::exists(musicDir)) {
+			for (auto& it : fs::recursive_directory_iterator(musicDir)) {
+				addNewEntry(it.path().u8string()); // IMPORTANT use here u8string to support unicode filepaths (addNewEntry can use just .string())!
+			}
+		}
+		else {
+			log("Error: Music directory '" + musicDir.string() + "' could not be found!\n");
 		}
 	}
 	_init(options);
@@ -138,8 +139,12 @@ void core::Playlist::_init(int options)
 
 	// Play:
 	if (playlist.size() > 0 && fs::exists(current().path)) {
-		music.openFromFile(current().path.string());
-		music.play();
+		music = Mix_LoadMUS(current().path.string().c_str());
+		if (!music) {
+			log("Failed to load music! SDL_mixer Error: " + std::string(Mix_GetError()) + "\n");
+			__debugbreak();
+		}
+		Mix_PlayMusic(music, 0);
 	}
 	playtime.restart();
 }
@@ -150,7 +155,8 @@ void core::Playlist::terminate()
 	name = "";
 	current_ = 0;
 	loop = false;
-	music.stop();
+	Mix_HaltMusic();
+	Mix_FreeMusic(music);
 	oldElapsedTime = 0s;
 	fadeOutEnabled = false;
 	fadeOutActive = false;
@@ -181,8 +187,14 @@ void core::Playlist::play(bool next)
 
 		// Play:
 		if (current_ >= 0 && current_ < playlist.size()) {
-			music.openFromFile(current().path.string());
-			music.play();
+			Mix_FreeMusic(music);
+			music = Mix_LoadMUS(current().path.string().c_str());
+			if (!music) {
+				log("Failed to load music! SDL_mixer Error: " + std::string(Mix_GetError()) + "\n");
+				__debugbreak();
+			}
+			Mix_PlayMusic(music, 0);
+			currentMusicLoop = false;
 			playtime.restart();
 		}
 		else {
@@ -196,7 +208,8 @@ void core::Playlist::play(bool next)
 	{
 		// ..replay current music
 		--current().playCount;
-		music.play();
+		Mix_PlayMusic(music, 0);
+		currentMusicLoop = false;
 		playtime.restart();
 	}
 }
@@ -213,6 +226,10 @@ void core::Playlist::playPrevious()
 
 void core::Playlist::update()
 {
+	if (playlist.empty()) {
+		return;
+	}
+
 	// Loop:
 	// playtime.getElapsedTime().asSeconds() >= currentMusicDuration().asSeconds() is not sure if it will be reached
 	if (currentMusicGetLoop()) {
@@ -233,7 +250,7 @@ void core::Playlist::update()
 
 			float fadeFactor = remainingPlaytime.asSeconds() / fadeOutTime.asSeconds(); // value from 0..1 (8sec / 10sec = 0.8)
 			fadeFactor = fadeFactor < minFadeOutFactor ? minFadeOutFactor : fadeFactor;
-			music.setVolume(volume * fadeFactor); // important do not call this->setVolume() here.
+			Mix_VolumeMusic(volume * fadeFactor); // important do not call this->setVolume() here.
 		}
 		else if (fadeOutActive && remainingPlaytime.asSeconds() > 10.f) {
 			fadeOutActive = false;
@@ -244,37 +261,41 @@ void core::Playlist::update()
 
 void core::Playlist::resume()
 {
-	music.play();
+	Mix_ResumeMusic();
 	playtime.resume();
 }
 
 void core::Playlist::pause()
 {
-	music.pause();
+	Mix_PauseMusic();
 	playtime.stop();
 }
 
 void core::Playlist::stop()
 {
-	music.stop();
+	Mix_HaltMusic();
 	playtime.stop();
 }
 
 void core::Playlist::setVolume(float volume)
 {
-	music.setVolume(volume);
+	Mix_VolumeMusic(volume);
 	this->volume = volume;
 }
 
 void core::Playlist::skipTime(Time skipTime)
 {
-	float time = playtime.getElapsedTime().asSeconds() + skipTime.asSeconds();
-	if (time < 0) {
-		music.setPlayingOffset(sf::seconds(0));
+	Time time = playtime.getElapsedTime() + skipTime;
+	if (time < 0s) {
+		if (Mix_SetMusicPosition(0) == -1) {
+			log("Mix_SetMusicPosition failed (" + current().path.stem().string() + ")!");
+		}
 		playtime.restart();
 	}
 	else {
-		music.setPlayingOffset(sf::seconds(time));
+		if (Mix_SetMusicPosition(time.asSeconds()) == -1) {
+			log("Mix_SetMusicPosition failed (" + current().path.stem().string() + ")!");
+		}
 		playtime.add(skipTime);
 	}
 }
@@ -286,12 +307,17 @@ core::Time core::Playlist::currentMusicElapsedTime()
 
 core::Time core::Playlist::currentMusicDuration()
 {
-	return Time(Microseconds(music.getDuration().asMicroseconds()));
+	return current().duration; // IMPORTANT: If Mix_MusicDuration() is used frequently, the music stutters..
 }
 
 void core::Playlist::currentMusicSetLoop(bool loop)
 {
-	music.setLoop(loop);
+	// TODO: Does this really work nicely?
+	Mix_PlayMusic(music, loop? -1 : 0);
+	currentMusicLoop = loop;
+	if (Mix_SetMusicPosition(playtime.getElapsedTime().asSeconds()) == -1) {
+		log("Mix_SetMusicPosition failed (" + current().path.stem().string() + ")!");
+	}
 }
 
 void core::Playlist::setLoop(bool loop)
@@ -301,17 +327,17 @@ void core::Playlist::setLoop(bool loop)
 
 bool core::Playlist::isPlaying() const
 {
-	return music.getStatus() == sf::Music::Playing;
+	return Mix_PlayingMusic() && !Mix_PausedMusic(); // SDL2 treats paused music as playing music
 }
 
 bool core::Playlist::isPaused() const
 {
-	return music.getStatus() == sf::Music::Paused;
+	return Mix_PausedMusic();
 }
 
 bool core::Playlist::isCurrentMusicStopped() const
 {
-	return music.getStatus() == sf::Music::Stopped;
+	return !Mix_PlayingMusic(); // Important you can not call !isPlaying() here; SDL2 returns true if music is paused.
 }
 
 bool core::Playlist::isStopped() const
@@ -321,7 +347,7 @@ bool core::Playlist::isStopped() const
 
 bool core::Playlist::currentMusicGetLoop() const
 {
-	return music.getLoop();
+	return currentMusicLoop;
 }
 
 bool core::Playlist::getLoop() const
@@ -348,6 +374,11 @@ const core::Playlist::Entry& core::Playlist::current() const
 size_t core::Playlist::currentNumber() const
 {
 	return current_ + 1;
+}
+
+std::vector<fs::path> core::Playlist::getMusicDirs() const
+{
+	return musicDirs;
 }
 
 size_t core::Playlist::size() const
