@@ -30,11 +30,11 @@ void MenuState::init()
 	// Set selected:
 	// Do not do this in the constructor, because in App::App I need to check if the directory exists.
 	std::map<std::wstring, std::wstring> config = core::getConfig("data/config.dat");
-	if (config.count(L"﻿defaultPlaylist") == 0) {
+	if (config.count(L"defaultPlaylist") == 0) {
 		core::log("Error: defaultPlaylist not found in config.dat");
 		__debugbreak();
 	}
-	selected = std::stoi(config[L"﻿defaultPlaylist"]);
+	selected = std::stoi(config[L"defaultPlaylist"]);
 	//if (selected <= 0) {
 	//	std::cerr << "Error: config.dat::defaultPlaylist may not be less than 1!\n";
 	//	__debugbreak();

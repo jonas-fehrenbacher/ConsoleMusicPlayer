@@ -121,6 +121,25 @@ static std::vector<fs::path> getMusicDirsFromConfig()
 		}
 	}
 
+	// Set default music directory:
+	// Should not be added automatically, because user should control what he wants. I add this only if config.dat does not exist.
+	//std::string username = core::getUsername();
+	//if (!username.empty()) {
+	//	fs::path defaultMusicDir = "C:/Users/" + username + "/Music";
+	//	if (fs::exists(defaultMusicDir)) {
+	//		bool isAlreadySet = false;
+	//		for (auto& musicDir : musicDirs) {
+	//			if (musicDir == defaultMusicDir) {
+	//				isAlreadySet = true;
+	//				break;
+	//			}
+	//		}
+	//		if (!isAlreadySet) {
+	//			musicDirs.push_back(defaultMusicDir);
+	//		}
+	//	}
+	//}
+
 	return musicDirs;
 }
 

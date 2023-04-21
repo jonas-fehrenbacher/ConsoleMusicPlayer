@@ -1,4 +1,4 @@
-﻿defaultPlaylist = 0
+defaultPlaylist = 0
 isPlaylistShuffled = true
 musicDirs = "D:/Data/Music/", "C:/Users/Jonas/Music/", "music/"
 playlistLoop = true

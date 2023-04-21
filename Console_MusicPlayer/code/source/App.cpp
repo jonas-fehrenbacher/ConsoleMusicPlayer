@@ -54,7 +54,7 @@ App::App() :
 	messageBus()
 {
 	SetConsoleTitle("Music Player");
-	core::setWindowSize(70, 80); // 50 60
+	core::setWindowSize(60, 60); // 50 60
 	core::setWindowPos(0, 0);
 	srand(time(nullptr));
 	// Setup unicode console:
@@ -104,9 +104,15 @@ App::App() :
 	}
 	// Create data/config.dat:
 	if (!fs::exists("data/config.dat")) {
+		std::string username = core::getUsername();
+		fs::path defaultMusicDir = "C:/Users/" + username + "/Music";
+		if (username.empty() || !fs::exists(defaultMusicDir)) {
+			defaultMusicDir = "";
+		}
 		ofs.open("data/config.dat");
-		ofs << "defaultPlaylist = 2\nisPlaylistShuffled = true\nplaylistLoop = true\ntotalRuntime = nolimit";
+		ofs << "defaultPlaylist = 0\nisPlaylistShuffled = true\nmusicDirs = " << defaultMusicDir << "\nplaylistLoop = true\ntotalRuntime = nolimit";
 		ofs.close();
+		// "D:/Data/Music/", "C:/Users/Jonas/Music/", "music/"
 	}
 
 	// ..after folder and files are created:

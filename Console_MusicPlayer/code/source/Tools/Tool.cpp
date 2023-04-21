@@ -150,6 +150,11 @@ void core::setConsoleFont(std::wstring fontName)
 	SetCurrentConsoleFontEx(GetStdHandle(STD_OUTPUT_HANDLE), false, &fontInfo);
 }
 
+std::string core::getUsername()
+{
+	return getenv("username");
+}
+
 long long core::getUUID()
 {
 	static long long id = 0;

@@ -21,6 +21,8 @@ namespace core
 	/* Font name can be anything windows knows: "Lucida Sans Unicode" for unicode or "Consolas". */
 	void setConsoleFont(std::wstring fontName);
 
+	std::string getUsername();
+
 	long long getUUID();
 
 	void setConfig(std::filesystem::path path, const std::map<std::wstring, std::wstring>& config);
