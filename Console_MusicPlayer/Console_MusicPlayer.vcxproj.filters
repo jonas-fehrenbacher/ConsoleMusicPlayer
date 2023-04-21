@@ -127,10 +127,10 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="data\config.dat">
+    <None Include="data\Loben1.pl">
       <Filter>Ressourcendateien</Filter>
     </None>
-    <None Include="data\Loben1.pl">
+    <None Include="data\config.dat">
       <Filter>Ressourcendateien</Filter>
     </None>
   </ItemGroup>

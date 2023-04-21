@@ -13,7 +13,7 @@ PlaylistEditorState::PlaylistEditorState(App* app) :
 void PlaylistEditorState::init()
 {
 	// Set music directories:
-	musicDirs = core::getConfigPathArr(core::getConfig("data/config.dat")["musicDirs"]);
+	musicDirs = core::getConfigPathArr(core::getConfig("data/config.dat")[L"musicDirs"]);
 }
 
 void PlaylistEditorState::terminate()

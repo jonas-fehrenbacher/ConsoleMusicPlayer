@@ -16,13 +16,18 @@ namespace core
 
 	void setWindowPos(unsigned short x, unsigned short y);
 
+	extern const std::wstring DEFAULT_UNICODE_FONTNAME;
+	extern const std::wstring DEFAULT_FONTNAME;
+	/* Font name can be anything windows knows: "Lucida Sans Unicode" for unicode or "Consolas". */
+	void setConsoleFont(std::wstring fontName);
+
 	long long getUUID();
 
-	void setConfig(std::filesystem::path path, const std::map<std::string, std::string>& config);
+	void setConfig(std::filesystem::path path, const std::map<std::wstring, std::wstring>& config);
 	/* File must contain in each line: varName=varValue. */
-	std::map<std::string, std::string> getConfig(std::filesystem::path path);
-	std::vector<std::string> getConfigStrArr(std::string array);
-	std::vector<fs::path> getConfigPathArr(std::string array);
+	std::map<std::wstring, std::wstring> getConfig(std::filesystem::path path);
+	std::vector<std::wstring> getConfigStrArr(std::wstring array);
+	std::vector<fs::path> getConfigPathArr(std::wstring array);
 
 	bool isSupportedAudioFile(fs::path filepath);
 

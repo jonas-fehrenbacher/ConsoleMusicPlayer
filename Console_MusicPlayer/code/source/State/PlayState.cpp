@@ -26,16 +26,16 @@ PlayState::PlayState(App* app) :
 
 void PlayState::init()
 {
-	std::map<std::string, std::string> config = core::getConfig("data/config.dat");
+	std::map<std::wstring, std::wstring> config = core::getConfig("data/config.dat");
 
-	int options = (config["isPlaylistShuffled"] == "true" ? core::Playlist::Shuffle : 0) | 
-		          (config["playlistLoop"]       == "true" ? core::Playlist::Loop : 0)    | 
+	int options = (config[L"isPlaylistShuffled"] == L"true" ? core::Playlist::Shuffle : 0) | 
+		          (config[L"playlistLoop"]       == L"true" ? core::Playlist::Loop : 0)    | 
 		          core::Playlist::FadeOut;
 
 	playlist.init(app->menuState.getPlaylistPath(), options);
 
-	if (config["totalRuntime"] != "nolimit") {
-		totalRunTime = core::Seconds(std::stoi(config["totalRuntime"]));
+	if (config[L"totalRuntime"] != L"nolimit") {
+		totalRunTime = core::Seconds(std::stoi(config[L"totalRuntime"]));
 	}
 
 	totalRunTimeClock.restart();
@@ -262,7 +262,7 @@ void PlayState::draw()
 		std::cout << "Playlist is empty or music could not be found!\nSearched for music in:\n";
 		std::vector<fs::path> musicDirs = playlist.getMusicDirs();
 		for (auto& musicDir : musicDirs) {
-			std::cout << "- " << musicDir << "\n";
+			std::wcout << L"- " << musicDir.wstring() << std::endl;
 		}
 		std::cout << "\n";
 	}

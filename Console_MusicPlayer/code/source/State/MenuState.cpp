@@ -1,4 +1,4 @@
-#include "State/MenuState.hpp"
+﻿#include "State/MenuState.hpp"
 #include "Tools/Tool.hpp"
 #include "Tools/InputDevice.hpp"
 #include "Message/Messages.hpp"
@@ -17,7 +17,7 @@ enum {
 MenuState::MenuState(App* app) :
 	app(app),
 	options(),
-	selected(1) // minimum is 1
+	selected(1) // minimum is 1 with PLAYLIST_EDITOR
 {
 	
 }
@@ -29,8 +29,12 @@ void MenuState::init()
 
 	// Set selected:
 	// Do not do this in the constructor, because in App::App I need to check if the directory exists.
-	std::map<std::string, std::string> config = core::getConfig("data/config.dat");
-	selected = std::stoi(config["defaultPlaylist"]);
+	std::map<std::wstring, std::wstring> config = core::getConfig("data/config.dat");
+	if (config.count(L"﻿defaultPlaylist") == 0) {
+		core::log("Error: defaultPlaylist not found in config.dat");
+		__debugbreak();
+	}
+	selected = std::stoi(config[L"﻿defaultPlaylist"]);
 	//if (selected <= 0) {
 	//	std::cerr << "Error: config.dat::defaultPlaylist may not be less than 1!\n";
 	//	__debugbreak();
@@ -63,8 +67,8 @@ void MenuState::handleEvent()
 		if (selected >= FRONT_PLAYLIST) {
 			app->messageBus.send(Message::MenuState_EnteredPlaylist);
 			// Update config:
-			std::map<std::string, std::string> config = core::getConfig("data/config.dat");
-			config["defaultPlaylist"] = std::to_string(selected);
+			std::map<std::wstring, std::wstring> config = core::getConfig("data/config.dat");
+			config[L"defaultPlaylist"] = std::to_wstring(selected);
 			core::setConfig("data/config.dat", config);
 		}
 		else {

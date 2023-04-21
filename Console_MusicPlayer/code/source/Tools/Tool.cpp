@@ -8,6 +8,13 @@
 #include <fstream>
 #include <algorithm>
 #include <cctype>
+#include <codecvt>
+#include <locale>
+
+namespace core {
+	const std::wstring DEFAULT_UNICODE_FONTNAME = L"Lucida Sans Unicode";
+	const std::wstring DEFAULT_FONTNAME = L"Consolas";
+}
 
 bool core::hasFlag(int flag, int flagList)
 {
@@ -129,60 +136,81 @@ void core::setWindowPos(unsigned short x, unsigned short y)
 	SetWindowPos(consoleWindow, NULL, 325, 100, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
 }
 
+void core::setConsoleFont(std::wstring fontName)
+{
+	
+	CONSOLE_FONT_INFOEX fontInfo;
+	fontInfo.cbSize = sizeof(fontInfo);
+	fontInfo.nFont = 0;
+	fontInfo.dwFontSize.X = 0;                   // Width of each character in the font
+	fontInfo.dwFontSize.Y = 24;                  // Height
+	fontInfo.FontFamily = FF_DONTCARE;
+	fontInfo.FontWeight = FW_NORMAL;
+	std::wcscpy(fontInfo.FaceName, fontName.c_str()); // Choose your font ("Consolas"); "Lucida Sans Unicode" is a unicode font! fontName.c_str()
+	SetCurrentConsoleFontEx(GetStdHandle(STD_OUTPUT_HANDLE), false, &fontInfo);
+}
+
 long long core::getUUID()
 {
 	static long long id = 0;
 	return id++;
 }
 
-void core::setConfig(std::filesystem::path path, const std::map<std::string, std::string>& config)
+void core::setConfig(std::filesystem::path path, const std::map<std::wstring, std::wstring>& config)
 {
-	std::ofstream ofs(path, std::ios::out);
+	// Debug:
+	return;
+
+	std::wofstream ofs(path, std::ios::out);
 	for (auto& [name, value] : config) {
 		ofs << name << " = " << value << "\n";
 	}
 	ofs.close();
 }
 
-std::map<std::string, std::string> core::getConfig(std::filesystem::path path)
+std::map<std::wstring, std::wstring> core::getConfig(std::filesystem::path path)
 {
-	std::map<std::string, std::string> config;
-	std::ifstream ifs(path, std::ios::in);
-	std::string line;
+	std::map<std::wstring, std::wstring> config;
+	std::wifstream ifs(path, std::ios::in);
+	ifs.imbue(std::locale(std::locale::empty(), new std::codecvt_utf8<wchar_t>));
+	std::wstring line;
 
 	while (std::getline(ifs, line))
 	{
 		// Note: Spaces may not be removed on 'line', because strings can contain spaces (e.g. paths).
-		std::string varName = line.substr(0, line.find('='));
-		varName.erase(std::remove_if(varName.begin(), varName.end(), isspace), varName.end()); // remove spaces
+		std::wstring varName = line.substr(0, line.find('='));
+		// remove spaces:
+		std::wstring::iterator newEndPos = std::remove(varName.begin(), varName.end(), ' ');
+		varName.erase(newEndPos, varName.end());
+		// Alternative works not for utf-8: varName.erase(std::remove_if(varName.begin(), varName.end(), isspace), varName.end());
 		int varValueIndex = line.find('=') + 1;
 		for (; line[varValueIndex] == ' '; ++varValueIndex);
-		std::string varValue = line.substr(varValueIndex);
-		config.insert(std::pair<std::string, std::string>(varName, varValue));
+		std::wstring varValue = line.substr(varValueIndex);
+		config.insert(std::pair<std::wstring, std::wstring>(varName, varValue));
 	}
 	ifs.close();
 
 	return config;
 }
 
-std::vector<std::string> core::getConfigStrArr(std::string strarr)
+std::vector<std::wstring> core::getConfigStrArr(std::wstring strarr)
 {
 	// Example: musicDirs = "music", "C:/Users/Jonas/Music"
-	std::vector<std::string> arr;
-	for (int end = 0; strarr.find("\"", end + 1) != -1;) { // +1 because at the end I need to check for the next occurrence
-		int begin = strarr.find("\"", end == 0 ? 0 : end + 1);
-		end = strarr.find("\"", begin + 1);
+	std::vector<std::wstring> arr;
+	for (int end = 0; strarr.find(L"\"", end + 1) != -1;) { // +1 because at the end I need to check for the next occurrence
+		int begin = strarr.find(L"\"", end == 0 ? 0 : end + 1);
+		end = strarr.find(L"\"", begin + 1);
 		arr.push_back(strarr.substr(begin + 1, end - begin - 1));
 	}
 	return arr;
 }
 
-std::vector<fs::path> core::getConfigPathArr(std::string strarr)
+std::vector<fs::path> core::getConfigPathArr(std::wstring strarr)
 {
 	std::vector<fs::path> pathArr;
-	std::vector<std::string> arr = getConfigStrArr(strarr);
+	std::vector<std::wstring> arr = getConfigStrArr(strarr);
 	std::transform(arr.begin(), arr.end(), std::back_inserter(pathArr),
-		[](const std::string& str) { return str; });
+		[](const std::wstring& str) { return str; });
 	return pathArr;
 }
 

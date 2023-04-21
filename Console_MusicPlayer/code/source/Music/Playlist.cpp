@@ -1,4 +1,4 @@
-#include "Music/Playlist.hpp"
+﻿#include "Music/Playlist.hpp"
 #include "Tools/Tool.hpp"
 #include <filesystem>
 #include <fstream>
@@ -35,16 +35,16 @@ void core::Playlist::addNewEntry(std::filesystem::path path)
 	}
 
 	// Open music to get its metadata:
-	Mix_Music* music = Mix_LoadMUS(path.make_preferred().string().c_str());
+	Mix_Music* music = Mix_LoadMUS(path.make_preferred().u8string().c_str());
 	if (!music) {
 		log("Failed to load music! SDL_mixer Error: " + std::string(Mix_GetError()) + "\n");
 		//__debugbreak();
 		return;
 	}
 
-	std::string filenameStem = path.stem().string();
+	std::string filenameStem = path.stem().u8string();
 	Entry entry;
-	entry.path = path.make_preferred().string();
+	entry.path = path.make_preferred().wstring();
 	std::string sdlTitle = Mix_GetMusicTitle(music);
 	entry.title = strcmp(Mix_GetMusicTitle(music), "") == 0? filenameStem : Mix_GetMusicTitle(music); // SDL2 does not return filename as mentioned, so I do it manually.
 	entry.artist = strcmp(Mix_GetMusicArtistTag(music), "") == 0 ? "unknown" : Mix_GetMusicTitle(music);
@@ -70,6 +70,60 @@ void core::Playlist::shuffle()
 	}
 }
 
+static std::vector<fs::path> getMusicDirsFromConfig()
+{
+	// Set music directories: 
+	// std::filesystem::weakly_canonical(): convert to absolute path that has no dot, dot-dot elements or symbolic links in its generic format representation.
+	// std::mismatch(begin1, end1, begin2): 
+	// - end2 is equal begin2 + (end1-begin1)
+	// - Returns iterator to the first mismatch [it1, it2] or if it is equal then [end1+1, end2].
+	// - Example:
+	//   const fs::path path1 = "C:/user/jonas/music/test", path2 = "C:/user/jonas/music/Loblieder";
+	//   auto [it1, it2] = std::mismatch(path1.begin(), path1.end(), path2.begin());
+	//   std::cout << "it1: " << *it1 << ", it2: " << *it2 << "\n"; // it1: "test", it2: "Loblieder"
+	// - IMPORTANT: This only works if there is no trailing slash (/).
+	//   std::path::iterator iterates over each directory and with an trailing slash there is probably an additional entry.
+	std::vector<fs::path> musicDirs = core::getConfigPathArr(core::getConfig("data/config.dat")[L"musicDirs"]);
+	// Erase all no-directory entries:
+	for (auto it = musicDirs.begin(); it != musicDirs.end();) {
+		if (!fs::exists(*it) || !fs::is_directory(*it)) it = musicDirs.erase(it);
+		else ++it;
+	}
+	// Erase all subdirectory entries:
+	// IMPORTANT: std::mismatch only works if there is no trailing slash (/), so we remove it first.
+	for (auto& musicDir : musicDirs) { // (reference is required)
+		if (musicDir.u8string().back() == '/' || musicDir.u8string().back() == '\\') { // important: needs to be u8string() for unicode paths.
+			std::wstring normalizedPath = musicDir.wstring();
+			normalizedPath.pop_back();
+			musicDir = normalizedPath;
+		}
+	}
+	for (auto subPathIt = musicDirs.begin(); subPathIt != musicDirs.end();) {
+		fs::path subPath = std::filesystem::weakly_canonical(*subPathIt);
+		bool isSubpath = false;
+		for (auto rootPathIt = musicDirs.begin(); rootPathIt != musicDirs.end(); ++rootPathIt) {
+			if (subPathIt == rootPathIt) {
+				// ..is same directory, skip.
+				continue;
+			}
+			fs::path rootPath = std::filesystem::weakly_canonical(*rootPathIt);
+			auto [rootIT, subIT] = std::mismatch(rootPath.begin(), rootPath.end(), subPath.begin());
+			if (rootIT == rootPath.end()) {
+				// ..rootPath is really a root path of subPath
+				// To avoid adding music twice we have to delete the sub path.
+				subPathIt = musicDirs.erase(subPathIt);
+				isSubpath = true;
+				break;
+			}
+		}
+		if (!isSubpath) {
+			++subPathIt;
+		}
+	}
+
+	return musicDirs;
+}
+
 void core::Playlist::init(std::filesystem::path playlistPath, int options /*= 0*/)
 {
 	if (playlistPath.empty() || playlistPath == "data/all.pl") {
@@ -81,8 +135,7 @@ void core::Playlist::init(std::filesystem::path playlistPath, int options /*= 0*
 		system("PAUSE");
 	}
 
-	// Set music directories:
-	musicDirs = core::getConfigPathArr(core::getConfig("data/config.dat")["musicDirs"]);
+	musicDirs = getMusicDirsFromConfig();
 
 	name = playlistPath.filename().string();
 	std::string   filename;
@@ -94,7 +147,7 @@ void core::Playlist::init(std::filesystem::path playlistPath, int options /*= 0*
 		for (auto& musicDir : musicDirs) {
 			for (auto& it : fs::recursive_directory_iterator(musicDir)) {
 				if (it.path().filename() == filename) {
-					addNewEntry(it.path().u8string()); // IMPORTANT use here u8string to support unicode filepaths (addNewEntry can use just .string())!
+					addNewEntry(it.path().wstring()); // IMPORTANT use here u8string to support Dvořák, but for something like 音楽 you need wstring.
 					// Note: we iterate further, because in the other directory could be a file with the same name.
 				}
 			}
@@ -109,12 +162,12 @@ void core::Playlist::init(std::filesystem::path playlistPath, int options /*= 0*
 void core::Playlist::init(int options /*= 0*/)
 {
 	// Set music directories:
-	musicDirs = core::getConfigPathArr(core::getConfig("data/config.dat")["musicDirs"]);
+	musicDirs = getMusicDirsFromConfig();
 
 	for (auto& musicDir : musicDirs) {
 		if (fs::exists(musicDir)) {
 			for (auto& it : fs::recursive_directory_iterator(musicDir)) {
-				addNewEntry(it.path().u8string()); // IMPORTANT use here u8string to support unicode filepaths (addNewEntry can use just .string())!
+				addNewEntry(it.path().wstring()); // IMPORTANT use here u8string to support Dvořák, but for something like 音楽 you need wstring.
 			}
 		}
 		else {
@@ -139,7 +192,7 @@ void core::Playlist::_init(int options)
 
 	// Play:
 	if (playlist.size() > 0 && fs::exists(current().path)) {
-		music = Mix_LoadMUS(current().path.string().c_str());
+		music = Mix_LoadMUS(current().path.u8string().c_str()); // u8string() required for unicode path
 		if (!music) {
 			log("Failed to load music! SDL_mixer Error: " + std::string(Mix_GetError()) + "\n");
 			__debugbreak();
@@ -188,7 +241,7 @@ void core::Playlist::play(bool next)
 		// Play:
 		if (current_ >= 0 && current_ < playlist.size()) {
 			Mix_FreeMusic(music);
-			music = Mix_LoadMUS(current().path.string().c_str());
+			music = Mix_LoadMUS(current().path.u8string().c_str()); // u8string() required for unicode path
 			if (!music) {
 				log("Failed to load music! SDL_mixer Error: " + std::string(Mix_GetError()) + "\n");
 				__debugbreak();

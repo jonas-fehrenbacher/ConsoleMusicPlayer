@@ -8,6 +8,8 @@
 #include <Windows.h>
 #include <SDL.h>
 #include <SDL_mixer.h>
+#include <codecvt>
+#include <locale>
 namespace fs = std::filesystem;
 
 // Debug:
@@ -55,6 +57,19 @@ App::App() :
 	core::setWindowSize(70, 80); // 50 60
 	core::setWindowPos(0, 0);
 	srand(time(nullptr));
+	// Setup unicode console:
+	// See: https://stackoverflow.com/questions/2492077/output-unicode-strings-in-windows-console-app
+	std::ios_base::sync_with_stdio(false); // maybe optional
+	std::locale utf8(std::locale(), new std::codecvt_utf8_utf16<wchar_t>);
+	std::wcout.imbue(utf8); // Required to output utf-8 paths.
+	SetConsoleOutputCP(CP_UTF8); // required
+	SetConsoleCP(CP_UTF8); // optional
+	//char* a = setlocale(LC_ALL, ".UTF8");
+	core::setConsoleFont(core::DEFAULT_FONTNAME); //core::DEFAULT_UNICODE_FONTNAME
+	// TODO: Set nice looking unicode font (Lucida Sans Unicode look ugly).
+	// Debug:
+	//std::wcout << L"音楽";
+	//std::wcout << L"你好" << std::endl;
 
 	// Init SDL2:
 	if (SDL_Init(SDL_INIT_EVERYTHING) < 0) { // enables to invoke SDL2 functions

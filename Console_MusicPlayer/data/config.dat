@@ -1,5 +1,5 @@
-defaultPlaylist = 1
+﻿defaultPlaylist = 0
 isPlaylistShuffled = true
-musicDirs = "music", "C:/Users/Jonas/Music", "D:/Data/Music/"
+musicDirs = "D:/Data/Music/", "C:/Users/Jonas/Music/", "music/"
 playlistLoop = true
 totalRuntime = nolimit
