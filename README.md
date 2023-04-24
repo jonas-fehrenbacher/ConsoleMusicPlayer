@@ -16,5 +16,9 @@ PS D:\...\Console_MusicPlayer> python dirToPlaylist.py "C:\Users\MyName\Musik"
 
 This will output an <dir-name>.pl file to your current directory which contains all music pieces who are directly inside this directory. 
 
+## How does it look?
+# Menu:
+<img src="preview-imgs/consoleMusicPlayerMenuAquaDesign.PNG" alt="consoleMusicPlayerMenuAquaDesign"/>
+
 ## What is done next?
 - I want to add an PlaylistEditor (add, remove music from a playlist and create new ones and specify directories).
