@@ -3,6 +3,7 @@
 #include "State/StateMachine.hpp"
 #include <filesystem>
 #include <vector>
+#include "ScrollableList.hpp"
 
 class App;
 
@@ -22,4 +23,5 @@ private:
     App*                     app;
     std::vector<std::string> options;
     int                      selected;
+    core::ScrollableList     musicList;
 };

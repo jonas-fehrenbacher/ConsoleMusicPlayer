@@ -12,13 +12,12 @@ PlaylistEditorState::PlaylistEditorState(App* app) :
 
 void PlaylistEditorState::init()
 {
-	// Set music directories:
-	musicDirs = core::getConfigPathArr(core::getConfig("data/config.dat")[L"musicDirs"]);
+	
 }
 
 void PlaylistEditorState::terminate()
 {
-	musicDirs.clear();
+	
 }
 
 void PlaylistEditorState::update()
@@ -35,7 +34,7 @@ void PlaylistEditorState::handleEvent()
 
 void PlaylistEditorState::draw()
 {
-	for (auto& musicDir : musicDirs) {
+	for (auto& musicDir : app->musicDirs) {
 		std::cout << core::ColoredStr(musicDir.string(), core::Color::White) << "\n";
 		for (auto& it : fs::recursive_directory_iterator(musicDir)) {
 			if (core::isSupportedAudioFile(it.path())) {

@@ -84,6 +84,12 @@
     <ClCompile Include="code\source\State\PlaylistEditorState.cpp">
       <Filter>Quelldateien\State</Filter>
     </ClCompile>
+    <ClCompile Include="code\source\ScrollableList.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="code\source\Console.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="code\include\Timer\Time.hpp">
@@ -124,6 +130,12 @@
     </ClInclude>
     <ClInclude Include="code\include\State\PlaylistEditorState.hpp">
       <Filter>Headerdateien\State</Filter>
+    </ClInclude>
+    <ClInclude Include="code\include\ScrollableList.hpp">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="code\include\Console.hpp">
+      <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

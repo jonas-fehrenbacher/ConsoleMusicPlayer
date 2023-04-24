@@ -5,6 +5,7 @@
 #include <SDL_mixer.h>
 #include <string>
 #include <filesystem>
+#include <vector>
 namespace fs = std::filesystem;
 
 namespace core
@@ -32,9 +33,9 @@ namespace core
 
 		Playlist();
 		/* Load playlist from file (must be located in data/). If playlistName is empty, then all music is loaded. */
-		void init(std::filesystem::path playlistName, int options = 0);
+		void init(std::filesystem::path playlistName, std::vector<fs::path> musicDirs, int options = 0);
 		/* Create a playlist with all music there is. */
-		void init(int options = 0);
+		void init(std::vector<fs::path> musicDirs, int options = 0);
 		void terminate();
 		void playNext();
 		void playPrevious();
@@ -66,20 +67,18 @@ namespace core
 		const Entry& current() const;
 		/* Get number of currently playing music - maximum is size(). This is index + 1. */
 		size_t currentNumber() const;
-		std::vector<fs::path> getMusicDirs() const;
 	private:
-		std::vector<Entry>       playlist;
-		std::string              name;
-		size_t                   current_; // index of current playing music
-		bool                     loop;
-		Mix_Music*               music;
-		core::Timer              playtime;
-		Time                     oldElapsedTime;
-		bool                     fadeOutEnabled;
-		bool                     fadeOutActive;
-		float                    volume;
-		std::vector<fs::path>    musicDirs; // in this directories I search for music.
-		bool                     currentMusicLoop;
+		std::vector<Entry> playlist;
+		std::string        name;
+		size_t             current_; // index of current playing music
+		bool               loop;
+		Mix_Music*         music;
+		core::Timer        playtime;
+		Time               oldElapsedTime;
+		bool               fadeOutEnabled;
+		bool               fadeOutActive;
+		float              volume;
+		bool               currentMusicLoop;
 
 		void addNewEntry(fs::path);
 		void play(bool next);

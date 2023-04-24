@@ -140,9 +140,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="code\source\App.cpp" />
+    <ClCompile Include="code\source\Console.cpp" />
     <ClCompile Include="code\source\main.cpp" />
     <ClCompile Include="code\source\Messages\MessageBus.cpp" />
     <ClCompile Include="code\source\Music\Playlist.cpp" />
+    <ClCompile Include="code\source\ScrollableList.cpp" />
     <ClCompile Include="code\source\State\MenuState.cpp" />
     <ClCompile Include="code\source\State\PlaylistEditorState.cpp" />
     <ClCompile Include="code\source\State\PlayState.cpp" />
@@ -155,9 +157,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="code\include\App.hpp" />
+    <ClInclude Include="code\include\Console.hpp" />
     <ClInclude Include="code\include\Message\MessageBus.hpp" />
     <ClInclude Include="code\include\Message\Messages.hpp" />
     <ClInclude Include="code\include\Music\Playlist.hpp" />
+    <ClInclude Include="code\include\ScrollableList.hpp" />
     <ClInclude Include="code\include\State\MenuState.hpp" />
     <ClInclude Include="code\include\State\PlaylistEditorState.hpp" />
     <ClInclude Include="code\include\State\PlayState.hpp" />

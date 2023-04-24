@@ -70,91 +70,16 @@ void core::Playlist::shuffle()
 	}
 }
 
-static std::vector<fs::path> getMusicDirsFromConfig()
-{
-	// Set music directories: 
-	// std::filesystem::weakly_canonical(): convert to absolute path that has no dot, dot-dot elements or symbolic links in its generic format representation.
-	// std::mismatch(begin1, end1, begin2): 
-	// - end2 is equal begin2 + (end1-begin1)
-	// - Returns iterator to the first mismatch [it1, it2] or if it is equal then [end1+1, end2].
-	// - Example:
-	//   const fs::path path1 = "C:/user/jonas/music/test", path2 = "C:/user/jonas/music/Loblieder";
-	//   auto [it1, it2] = std::mismatch(path1.begin(), path1.end(), path2.begin());
-	//   std::cout << "it1: " << *it1 << ", it2: " << *it2 << "\n"; // it1: "test", it2: "Loblieder"
-	// - IMPORTANT: This only works if there is no trailing slash (/).
-	//   std::path::iterator iterates over each directory and with an trailing slash there is probably an additional entry.
-	std::vector<fs::path> musicDirs = core::getConfigPathArr(core::getConfig("data/config.dat")[L"musicDirs"]);
-	// Erase all no-directory entries:
-	for (auto it = musicDirs.begin(); it != musicDirs.end();) {
-		if (!fs::exists(*it) || !fs::is_directory(*it)) it = musicDirs.erase(it);
-		else ++it;
-	}
-	// Erase all subdirectory entries:
-	// IMPORTANT: std::mismatch only works if there is no trailing slash (/), so we remove it first.
-	for (auto& musicDir : musicDirs) { // (reference is required)
-		if (musicDir.u8string().back() == '/' || musicDir.u8string().back() == '\\') { // important: needs to be u8string() for unicode paths.
-			std::wstring normalizedPath = musicDir.wstring();
-			normalizedPath.pop_back();
-			musicDir = normalizedPath;
-		}
-	}
-	for (auto subPathIt = musicDirs.begin(); subPathIt != musicDirs.end();) {
-		fs::path subPath = std::filesystem::weakly_canonical(*subPathIt);
-		bool isSubpath = false;
-		for (auto rootPathIt = musicDirs.begin(); rootPathIt != musicDirs.end(); ++rootPathIt) {
-			if (subPathIt == rootPathIt) {
-				// ..is same directory, skip.
-				continue;
-			}
-			fs::path rootPath = std::filesystem::weakly_canonical(*rootPathIt);
-			auto [rootIT, subIT] = std::mismatch(rootPath.begin(), rootPath.end(), subPath.begin());
-			if (rootIT == rootPath.end()) {
-				// ..rootPath is really a root path of subPath
-				// To avoid adding music twice we have to delete the sub path.
-				subPathIt = musicDirs.erase(subPathIt);
-				isSubpath = true;
-				break;
-			}
-		}
-		if (!isSubpath) {
-			++subPathIt;
-		}
-	}
-
-	// Set default music directory:
-	// Should not be added automatically, because user should control what he wants. I add this only if config.dat does not exist.
-	//std::string username = core::getUsername();
-	//if (!username.empty()) {
-	//	fs::path defaultMusicDir = "C:/Users/" + username + "/Music";
-	//	if (fs::exists(defaultMusicDir)) {
-	//		bool isAlreadySet = false;
-	//		for (auto& musicDir : musicDirs) {
-	//			if (musicDir == defaultMusicDir) {
-	//				isAlreadySet = true;
-	//				break;
-	//			}
-	//		}
-	//		if (!isAlreadySet) {
-	//			musicDirs.push_back(defaultMusicDir);
-	//		}
-	//	}
-	//}
-
-	return musicDirs;
-}
-
-void core::Playlist::init(std::filesystem::path playlistPath, int options /*= 0*/)
+void core::Playlist::init(std::filesystem::path playlistPath, std::vector<fs::path> musicDirs, int options /*= 0*/)
 {
 	if (playlistPath.empty() || playlistPath == "data/all.pl") {
-		init(options);
+		init(musicDirs, options);
 		return;
 	}
 	else if (!fs::exists(playlistPath)) {
 		std::cout << "Error: Playlist (" << playlistPath << ") not found!\n";
 		system("PAUSE");
 	}
-
-	musicDirs = getMusicDirsFromConfig();
 
 	name = playlistPath.filename().string();
 	std::string   filename;
@@ -178,11 +103,8 @@ void core::Playlist::init(std::filesystem::path playlistPath, int options /*= 0*
 	_init(options);
 }
 
-void core::Playlist::init(int options /*= 0*/)
+void core::Playlist::init(std::vector<fs::path> musicDirs, int options /*= 0*/)
 {
-	// Set music directories:
-	musicDirs = getMusicDirsFromConfig();
-
 	for (auto& musicDir : musicDirs) {
 		if (fs::exists(musicDir)) {
 			for (auto& it : fs::recursive_directory_iterator(musicDir)) {
@@ -446,11 +368,6 @@ const core::Playlist::Entry& core::Playlist::current() const
 size_t core::Playlist::currentNumber() const
 {
 	return current_ + 1;
-}
-
-std::vector<fs::path> core::Playlist::getMusicDirs() const
-{
-	return musicDirs;
 }
 
 size_t core::Playlist::size() const

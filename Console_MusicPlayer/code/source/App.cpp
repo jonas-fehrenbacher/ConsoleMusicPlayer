@@ -2,6 +2,7 @@
 #include "Tools/InputDevice.hpp"
 #include "Tools/Tool.hpp"
 #include "Message/Messages.hpp"
+#include "Console.hpp"
 #include <fstream>
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
@@ -11,37 +12,79 @@
 #include <codecvt>
 #include <locale>
 namespace fs = std::filesystem;
+using namespace std::string_literals;
 
-// Debug:
-double wavGetSeconds(const char* filename) {
-	// See: https://stackoverflow.com/questions/76030221/is-it-possible-to-get-length-in-seconds-of-a-loaded-wav-file-in-sdl-library
-	SDL_AudioSpec spec;
-	uint32_t audioLen;
-	uint8_t* audioBuf;
-	double seconds = 0.0;
-	
-	if (SDL_LoadWAV(filename, &spec, &audioBuf, &audioLen) != NULL) {
-		// we aren't using the actual audio in this example
-		SDL_FreeWAV(audioBuf);
-		uint32_t sampleSize = SDL_AUDIO_BITSIZE(spec.format) / 8;
-		uint32_t sampleCount = audioLen / sampleSize;
-		// could do a sanity check and make sure (audioLen % sampleSize) is 0
-		uint32_t sampleLen = 0;
-		if (spec.channels) {
-			sampleLen = sampleCount / spec.channels;
-		}
-		else {
-			// spec.channels *should* be 1 or higher, but just in case
-			sampleLen = sampleCount;
-		}
-		seconds = (double)sampleLen / (double)spec.freq;
+intern std::vector<fs::path> getMusicDirsFromConfig()
+{
+	// Set music directories: 
+	// std::filesystem::weakly_canonical(): convert to absolute path that has no dot, dot-dot elements or symbolic links in its generic format representation.
+	// std::mismatch(begin1, end1, begin2): 
+	// - end2 is equal begin2 + (end1-begin1)
+	// - Returns iterator to the first mismatch [it1, it2] or if it is equal then [end1+1, end2].
+	// - Example:
+	//   const fs::path path1 = "C:/user/jonas/music/test", path2 = "C:/user/jonas/music/Loblieder";
+	//   auto [it1, it2] = std::mismatch(path1.begin(), path1.end(), path2.begin());
+	//   std::cout << "it1: " << *it1 << ", it2: " << *it2 << "\n"; // it1: "test", it2: "Loblieder"
+	// - IMPORTANT: This only works if there is no trailing slash (/).
+	//   std::path::iterator iterates over each directory and with an trailing slash there is probably an additional entry.
+	std::vector<fs::path> musicDirs = core::getConfigPathArr(core::getConfig("data/config.dat")[L"musicDirs"]);
+	// Erase all no-directory entries:
+	for (auto it = musicDirs.begin(); it != musicDirs.end();) {
+		if (!fs::exists(*it) || !fs::is_directory(*it)) it = musicDirs.erase(it);
+		else ++it;
 	}
-	else {
-		// uh-oh!
-		fprintf(stderr, "ERROR: can't load: %s: %s\n", filename, SDL_GetError());
+	// Erase all subdirectory entries:
+	// IMPORTANT: std::mismatch only works if there is no trailing slash (/), so we remove it first.
+	for (auto& musicDir : musicDirs) { // (reference is required)
+		if (musicDir.u8string().back() == '/' || musicDir.u8string().back() == '\\') { // important: needs to be u8string() for unicode paths.
+			std::wstring normalizedPath = musicDir.wstring();
+			normalizedPath.pop_back();
+			musicDir = normalizedPath;
+		}
+	}
+	for (auto subPathIt = musicDirs.begin(); subPathIt != musicDirs.end();) {
+		fs::path subPath = std::filesystem::weakly_canonical(*subPathIt);
+		bool isSubpath = false;
+		for (auto rootPathIt = musicDirs.begin(); rootPathIt != musicDirs.end(); ++rootPathIt) {
+			if (subPathIt == rootPathIt) {
+				// ..is same directory, skip.
+				continue;
+			}
+			fs::path rootPath = std::filesystem::weakly_canonical(*rootPathIt);
+			auto [rootIT, subIT] = std::mismatch(rootPath.begin(), rootPath.end(), subPath.begin());
+			if (rootIT == rootPath.end()) {
+				// ..rootPath is really a root path of subPath
+				// To avoid adding music twice we have to delete the sub path.
+				subPathIt = musicDirs.erase(subPathIt);
+				isSubpath = true;
+				break;
+			}
+		}
+		if (!isSubpath) {
+			++subPathIt;
+		}
 	}
 
-	return seconds;
+	// Set default music directory:
+	// Should not be added automatically, because user should control what he wants. I add this only if config.dat does not exist.
+	//std::string username = core::getUsername();
+	//if (!username.empty()) {
+	//	fs::path defaultMusicDir = "C:/Users/" + username + "/Music";
+	//	if (fs::exists(defaultMusicDir)) {
+	//		bool isAlreadySet = false;
+	//		for (auto& musicDir : musicDirs) {
+	//			if (musicDir == defaultMusicDir) {
+	//				isAlreadySet = true;
+	//				break;
+	//			}
+	//		}
+	//		if (!isAlreadySet) {
+	//			musicDirs.push_back(defaultMusicDir);
+	//		}
+	//	}
+	//}
+
+	return musicDirs;
 }
 
 App::App() :
@@ -51,11 +94,14 @@ App::App() :
 	playState(this),
 	playlistEditorState(this),
 	drawTimer(),
-	messageBus()
+	messageBus(),
+	musicDirs() // do not initialize here, because maybe config.dat does not exist.
 {
-	SetConsoleTitle("Music Player");
-	core::setWindowSize(60, 60); // 50 60
-	core::setWindowPos(0, 0);
+	core::console::init();
+	core::console::setTitle("Music Player");
+	core::console::setSize(90, 35, true); // 1000, 900
+	//core::console::setPos(325, 100);
+	core::console::hideCursor();
 	srand(time(nullptr));
 	// Setup unicode console:
 	// See: https://stackoverflow.com/questions/2492077/output-unicode-strings-in-windows-console-app
@@ -65,11 +111,13 @@ App::App() :
 	SetConsoleOutputCP(CP_UTF8); // required
 	SetConsoleCP(CP_UTF8); // optional
 	//char* a = setlocale(LC_ALL, ".UTF8");
-	core::setConsoleFont(core::DEFAULT_FONTNAME); //core::DEFAULT_UNICODE_FONTNAME
+	core::console::setFont(core::console::DEFAULT_FONTNAME); //core::DEFAULT_UNICODE_FONTNAME
 	// TODO: Set nice looking unicode font (Lucida Sans Unicode look ugly).
 	// Debug:
 	//std::wcout << L"音楽";
 	//std::wcout << L"你好" << std::endl;
+
+	std::cout << "\tLoading music, please wait...";
 
 	// Init SDL2:
 	if (SDL_Init(SDL_INIT_EVERYTHING) < 0) { // enables to invoke SDL2 functions
@@ -90,6 +138,19 @@ App::App() :
 		std::cout << "SDL mixer initialization failed! SDL Error: " << Mix_GetError() << "\n";
 		__debugbreak();
 	}
+
+	// Create SDL2 window
+	// This is required to receive SDL_Event's.
+	//SDL_WINDOW_HIDDEN | SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS | SDL_WINDOW_KEYBOARD_GRABBED | SDL_WINDOW_MOUSE_GRABBED
+	//SDL_Window* window = NULL;
+	//window = SDL_CreateWindow("CMP", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 500, 500, 0);
+	//if (window == NULL) {
+	//	core::log("Window could not be created! SDL_Error: "s + SDL_GetError());
+	//	__debugbreak();
+	//	exit(1);
+	//}
+
+	core::inputDevice::init(std::bind(&App::terminate, this));
 	
 	// Clear log file:
 	std::ofstream ofs("data/log.txt");
@@ -115,6 +176,10 @@ App::App() :
 		// "D:/Data/Music/", "C:/Users/Jonas/Music/", "music/"
 	}
 
+	// Set music directories:
+	// Note set this after config.dat is created and before State::init() is called.
+	musicDirs = getMusicDirsFromConfig();
+
 	// ..after folder and files are created:
 	stateMachine.add(&menuState);
 	messageBus.add(std::bind(&App::onMessage, this, std::placeholders::_1));
@@ -136,13 +201,26 @@ void App::mainLoop()
 
 		stateMachine.update();
 		messageBus.update();
-
-		if (drawTimer.getElapsedTime() >= 500ms) {
-			core::clearScreen();
+		// maybe update musicDirs (optional)
+		core::inputDevice::update();
+		
+		if (drawTimer.getElapsedTime() >= 100ms) {
+			core::console::clearScreen();
 			stateMachine.draw();
 			drawTimer.restart();
 		}
 	}
+
+	// Terminate:
+	terminate();
+}
+
+void App::terminate()
+{
+	core::console::reset();
+	// Terminating SDL takes to much time (console freezes):
+	//Mix_Quit();
+	//SDL_Quit();
 }
 
 void App::onMessage(int message)

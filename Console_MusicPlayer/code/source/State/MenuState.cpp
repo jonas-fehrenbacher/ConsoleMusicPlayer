@@ -1,6 +1,7 @@
 ﻿#include "State/MenuState.hpp"
 #include "Tools/Tool.hpp"
 #include "Tools/InputDevice.hpp"
+#include "Console.hpp"
 #include "Message/Messages.hpp"
 #include "App.hpp"
 #define NOMINMAX
@@ -39,11 +40,13 @@ void MenuState::init()
 	//	std::cerr << "Error: config.dat::defaultPlaylist may not be less than 1!\n";
 	//	__debugbreak();
 	//}
+
+	musicList.init(app);
 }
 
 void MenuState::terminate()
 {
-
+	musicList.terminate();
 }
 
 void MenuState::update()
@@ -58,6 +61,9 @@ void MenuState::update()
 			options.push_back(it.path().stem().string());
 		}
 	}
+
+
+	musicList.update();
 }
 
 void MenuState::handleEvent()
@@ -99,12 +105,14 @@ void MenuState::handleEvent()
 			selected = 0;
 		}
 	}
+
+	musicList.handleEvent();
 }
 
 void MenuState::draw()
 {
-	std::cout << core::ColoredStr("Select options:", core::Color::Light_Yellow) << "\n";
-	std::cout << core::ColoredStr("(Select and press enter)", core::Color::Gray) << "\n\n";
+	std::cout << core::ColoredStr("Select options:", core::Color::Light_Yellow) << core::endl();
+	std::cout << core::ColoredStr("(Select and press enter)", core::Color::Gray) << core::endl() << core::endl();
 
 	for (int i = 0; i < options.size(); ++i) {
 		if (i >= FRONT_PLAYLIST) {
@@ -114,12 +122,15 @@ void MenuState::draw()
 			std::cout << "> ";
 		}
 		if (i == selected) {
-			std::cout << core::ColoredStr(options[i], core::Color::Light_Aqua) << "\n";
+			std::cout << core::ColoredStr(options[i], core::Color::Light_Aqua) << core::endl();
 		}
 		else {
-			std::cout << core::ColoredStr(options[i], core::Color::White) << "\n";
+			std::cout << core::ColoredStr(options[i], core::Color::White) << core::endl();
 		}
 	}
+
+	std::cout << core::endl() << core::endl();
+	musicList.draw();
 }
 
 std::filesystem::path MenuState::getPlaylistPath()

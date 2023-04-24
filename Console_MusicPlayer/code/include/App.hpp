@@ -9,12 +9,13 @@
 class App
 {
 public:
-	bool                isRunning;
-	core::StateMachine  stateMachine;
-	MenuState           menuState;
-	PlayState           playState;
-	PlaylistEditorState playlistEditorState;
-	core::MessageBus    messageBus;
+	bool                  isRunning;
+	core::StateMachine    stateMachine;
+	MenuState             menuState;
+	PlayState             playState;
+	PlaylistEditorState   playlistEditorState;
+	core::MessageBus      messageBus;
+	std::vector<fs::path> musicDirs;
 
 	explicit App();
 	explicit App(const App& other) = delete;
@@ -23,4 +24,5 @@ public:
 	void onMessage(int message);
 private:
 	core::Timer drawTimer;
+	void terminate();
 };
