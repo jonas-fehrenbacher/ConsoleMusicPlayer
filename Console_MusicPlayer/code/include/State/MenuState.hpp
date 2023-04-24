@@ -3,6 +3,7 @@
 #include "State/StateMachine.hpp"
 #include <filesystem>
 #include <vector>
+#include <array>
 #include "ScrollableList.hpp"
 
 class App;
@@ -20,8 +21,27 @@ public:
     /* Playlist all is a virtual playlist which plays all music there is. */
     std::filesystem::path getPlaylistPath();
 private:
-    App*                     app;
-    std::vector<std::string> options;
-    int                      selected;
-    core::ScrollableList     musicList;
+    enum Option
+    {
+        AllMusic = 0,
+        Playlists = 1,
+        Directories = 2,
+
+        None = 3, // If 'hover' is equal 'None', then we are currently in the music list, playlist list or directory list.
+        First = 0,
+        Last = 2
+    };
+
+    App*                       app;
+    std::array<std::string, 3> options;
+    Option                     selected; // this item is selected
+    Option                     hover; // over this item do we hover
+    core::ScrollableList       playlistList;
+    core::ScrollableList       musicList;
+    core::ScrollableList       directoryList;
+
+    void initMusicList();
+    void initDirectories();
+    bool isInsideOption();
+    bool isInsideOption(Option option);
 };

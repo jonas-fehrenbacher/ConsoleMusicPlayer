@@ -18,6 +18,11 @@ namespace core
 	 * clearScreen().
 	 */
 	struct endl {};
+	/* 
+	 * A normal tab (\t) draws nothing and the console cursor just jumps forward. With my clear routine this would allow
+	 * old draws to be seen. core::tab() just draws eight white spaces, thus overdrawing old frames / text.
+	 */
+	struct tab {};
 }
 
 namespace core::console
@@ -44,3 +49,5 @@ namespace core::console
 
 std::ostream& operator<<(std::ostream& stream, const core::endl& endl);
 std::wostream& operator<<(std::wostream& stream, const core::endl& endl);
+std::ostream& operator<<(std::ostream& stream, const core::tab& tab);
+std::wostream& operator<<(std::wostream& stream, const core::tab& tab);

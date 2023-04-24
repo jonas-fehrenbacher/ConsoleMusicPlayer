@@ -280,6 +280,20 @@ std::wostream& operator<<(std::wostream& stream, const core::endl& endl)
 	return stream;
 }
 
+std::ostream& operator<<(std::ostream& stream, const core::tab& _tab)
+{
+	static const std::string tab(8, ' ');
+	std::cout << tab;
+	return stream;
+}
+
+std::wostream& operator<<(std::wostream& stream, const core::tab& _tab)
+{
+	static const std::wstring tab(8, ' ');
+	std::wcout << tab;
+	return stream;
+}
+
 // Maybe useful: ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 intern COORD getScreenSize()
