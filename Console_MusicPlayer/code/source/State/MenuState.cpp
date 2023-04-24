@@ -30,7 +30,7 @@ void MenuState::init()
 		__debugbreak();
 	}
 	size_t selectedPlaylist = std::stoi(config[L"defaultPlaylist"]);
-	playlistList.init(app, true, 10, 60, selectedPlaylist);
+	playlistList.init(app, true, 15, 60, selectedPlaylist);
 	musicList.init(app);
 	directoryList.init(app);
 
@@ -179,11 +179,21 @@ void MenuState::handleEvent()
 
 void MenuState::draw()
 {
-	std::cout << core::ColoredStr("Select options:", core::Color::Light_Yellow) << core::endl();
-	std::cout << core::ColoredStr("(Select and press enter)", core::Color::Gray) << core::endl() << core::endl();
+	// Title:
+	std::string title = "Console Music Player";
+	int drawPos = core::console::getCharCount().x / 2.f - title.length() / 2.f;
+	title.insert(0, drawPos, ' ');
+	// Notice:
+	std::string notice = "(Select and press enter)";
+	drawPos = core::console::getCharCount().x / 2.f - notice.length() / 2.f;
+	notice.insert(0, drawPos, ' ');
+
+	std::cout << core::endl() << core::ColoredStr(title, core::Color::Light_Aqua) << core::endl();
+	std::cout << core::ColoredStr(notice, core::Color::Aqua) << core::endl();
+	std::cout << core::endl() << core::endl();
 
 	for (int i = 0; i < options.size(); ++i) {
-		std::cout << "> ";
+		std::cout << core::tab() << "> ";
 		if (i == hover) {
 			std::cout << core::ColoredStr(options[i], core::Color::Light_Aqua) << core::endl();
 		}
@@ -195,7 +205,7 @@ void MenuState::draw()
 		}
 	}
 
-	std::cout << core::endl() << core::endl();
+	std::cout << core::endl();
 
 	if (selected == Option::AllMusic) {
 		musicList.draw();

@@ -9,7 +9,7 @@ namespace core
 	class ScrollableList
 	{
 	public:
-		void init(App* app, bool selectionMode = true, int maxDrawnItems = 10, int maxDrawnItemNameLength = 60, size_t selected = 0);
+		void init(App* app, bool selectionMode = true, int maxDrawnItems = 15, int maxDrawnItemNameLength = 60, size_t selected = 0);
 		void terminate();
 		void update();
 		void handleEvent();
