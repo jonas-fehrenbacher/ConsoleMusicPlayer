@@ -123,11 +123,14 @@ intern void drawBorder(int size)
 
 void core::ScrollableList::draw()
 {
-
-	drawBorder(maxDrawnItemNameLength + 3 + 5); // +3: "...", +3: "300. "
+	const int BORDER_LENGTH = maxDrawnItemNameLength + 3 + 5; // +3: "...", +5: "300. "
+	drawBorder(BORDER_LENGTH);
 	//std::cout << core::endl();
 
-	if (list.empty()) {
+	if (maxDrawnItems <= 0) {
+		// do nothing (but can cause an error if used bellow.)
+	}
+	else if (list.empty()) {
 		std::cout << core::tab() << "Nothing found!" << core::endl();
 	}
 	else {
@@ -136,8 +139,9 @@ void core::ScrollableList::draw()
 		for (size_t i = startDrawIndex; i < list.size() && i < startDrawIndex + maxDrawnItems; ++i) {
 			// Set line text:
 			ss.str("");
-			ss << core::tab() << std::left << std::setw(5) << std::to_string((i + 1)) + "." << list[i].substr(0, maxDrawnItemNameLength)
-				<< (list[i].length() > maxDrawnItemNameLength ? "..." : ""); // core::endl() does not work for last item here, so I use it bellow.
+			std::string name = list[i].substr(0, maxDrawnItemNameLength) + (list[i].length() > maxDrawnItemNameLength ? "..." : "");
+			ss << core::tab() << std::left << std::setw(5) << std::to_string((i + 1)) + "." << name;
+			// core::endl() does not work for last item here, so I use it bellow.
 			line = ss.str();
 			// Set line color:
 			const int LAST_DRAWN_ITEM_INDEX = startDrawIndex + (maxDrawnItems - 1);
@@ -156,11 +160,23 @@ void core::ScrollableList::draw()
 				line.color = Color::Light_Aqua;
 			}
 			// Output:
-			std::cout << line << core::endl();
+			std::cout << line;
+			// Output scrollbar:
+			// Important: Unfortunately, std::setw() does not work for the scrollbar, because the music names have unicode characters and
+			// std::stringstream does not work properly with that (using std::wstringstream is to troublesome).
+			float scrollbarFactor = selected / (float)(list.size() - 1); // 0..1; size()-1 because selected starts at index 0
+			int scrollbarPos = static_cast<int>(round((maxDrawnItems - 1) * scrollbarFactor)); // 0..maxDrawnItems
+			// (maxDrawnItems-1): This is neccessray, because we want 'maxDrawnItems' positions (0..MDI-1) and not 'maxDrawnItems+1' positions.
+			if (i == startDrawIndex + scrollbarPos) {
+				int boxRightPos = 8 + BORDER_LENGTH; // 8 because of core::tab()
+				int offset = boxRightPos - core::console::getCursorPos().x;
+				std::cout << std::string(offset, ' ') << core::ColoredStr(" |", Color::Aqua);
+			}
+			std::cout << core::endl();
 		}
 	}
 	std::cout.flush();
-	drawBorder(maxDrawnItemNameLength + 3 + 5);
+	drawBorder(BORDER_LENGTH);
 }
 
 void core::ScrollableList::clear()

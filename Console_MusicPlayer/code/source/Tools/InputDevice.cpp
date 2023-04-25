@@ -71,7 +71,7 @@ void core::inputDevice::update()
     DWORD cNumRead;
     unsigned long eventCount;
     GetNumberOfConsoleInputEvents(hStdin, &eventCount);
-    while (eventCount)
+    if (eventCount > 0)
     {
         // ReadConsoleInput() does not return until at least one input record has been read!
         // This behavior should be fixed with GetNumberOfConsoleInputEvents().
@@ -83,7 +83,10 @@ void core::inputDevice::update()
             &cNumRead)) // number of records read 
             log("ReadConsoleInput");
 
-        eventCount -= cNumRead;
+        // If you use a loop:
+        // [ GetNumberOfConsoleInputEvents(,eventCount); ReadConsoleInput(,,,cNumRead); ]
+        // Important: Do not write: 'eventCount -= cNumRead;', sometimes this results in an endless loop, because 'cNumRead' 
+        // increases in this short amount of time, thus 'eventCount' as an unsigned will be really big.
 
         for (int i = 0; i < cNumRead; i++)
         {
