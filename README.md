@@ -17,7 +17,7 @@ PS D:\...\Console_MusicPlayer> python dirToPlaylist.py "C:\Users\MyName\Musik"
 This will output an <dir-name>.pl file to your current directory which contains all music pieces who are directly inside this directory. 
 
 ## How does it look?
-# Menu:
+### Menu > All Music
 <img src="preview-imgs/consoleMusicPlayerMenuAquaDesign.PNG" alt="consoleMusicPlayerMenuAquaDesign"/>
 
 ## What is done next?
