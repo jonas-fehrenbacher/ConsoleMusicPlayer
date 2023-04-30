@@ -311,11 +311,16 @@ size_t core::Playlist::originalToRealIndex(size_t originalIndex) const
 			return i;
 		}
 	}
+
+	return 0; // reached if playlist.empty()
 }
 
 size_t core::Playlist::realToOriginalIndex(size_t realIndex) const
 {
-	return playlist[realIndex].originSortIndex;
+	if (playlist.empty()) {
+		return 0; // playlist[] may not be called!
+	}
+	return playlist.at(realIndex).originSortIndex;
 }
 
 void core::Playlist::skipTime(Time skipTime)

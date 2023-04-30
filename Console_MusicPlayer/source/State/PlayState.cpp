@@ -90,7 +90,10 @@ void PlayState::update()
 		cooldownSkipReport.restart();
 	}
 
-	musicList.select(playlist.getCurrentMusicIndex());
+	if (playlist.size() > 0) {
+		// ..may not be called on empty playlists.
+		musicList.select(playlist.getCurrentMusicIndex());
+	}
 
 	playlist.update();
 	musicList.update();
