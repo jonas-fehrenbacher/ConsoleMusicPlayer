@@ -22,10 +22,13 @@ This will output an \<dir-name\>.pl file to your current directory which contain
 ## How does it look?
 ### Menu > All Music
 <img src="preview-imgs/consoleMusicPlayer_menuPlayingMusic.PNG" alt="consoleMusicPlayer_menuPlayingMusic"/>
+
 ### Menu > Playlists
 <img src="preview-imgs/consoleMusicPlayer_menuPlaylists.PNG" alt="consoleMusicPlayer_menuPlaylists"/>
+
 ### Menu > Directories
 <img src="preview-imgs/consoleMusicPlayer_menuDirectories.PNG" alt="consoleMusicPlayer_menuDirectories"/>
+
 ### Menu > Playlists > Playlist
 <img src="preview-imgs/consoleMusicPlayer_playlist.PNG" alt="consoleMusicPlayer_playlist"/>
 
