@@ -75,7 +75,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)Console_MusicPlayer\code\include;$(SolutionDir)SDL2-2.26.5-VC\include;$(SolutionDir)SDL2_mixer-2.6.3-VC\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Console_MusicPlayer\include;$(SolutionDir)SDL2-2.26.5-VC\include;$(SolutionDir)SDL2_mixer-2.6.3-VC\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;_CRT_SECURE_NO_WARNINGS;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
@@ -91,7 +91,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)Console_MusicPlayer\code\include;$(SolutionDir)SDL2-2.26.5-VC\include;$(SolutionDir)SDL2_mixer-2.6.3-VC\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Console_MusicPlayer\include;$(SolutionDir)SDL2-2.26.5-VC\include;$(SolutionDir)SDL2_mixer-2.6.3-VC\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;_CRT_SECURE_NO_WARNINGS;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -107,7 +107,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)Console_MusicPlayer\code\include;$(SolutionDir)SDL2-2.26.5-VC\include;$(SolutionDir)SDL2_mixer-2.6.3-VC\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Console_MusicPlayer\include;$(SolutionDir)SDL2-2.26.5-VC\include;$(SolutionDir)SDL2_mixer-2.6.3-VC\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;_CRT_SECURE_NO_WARNINGS;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
@@ -127,7 +127,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)Console_MusicPlayer\code\include;$(SolutionDir)SDL2-2.26.5-VC\include;$(SolutionDir)SDL2_mixer-2.6.3-VC\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Console_MusicPlayer\include;$(SolutionDir)SDL2-2.26.5-VC\include;$(SolutionDir)SDL2_mixer-2.6.3-VC\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;_CRT_SECURE_NO_WARNINGS;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -139,45 +139,47 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="code\source\App.cpp" />
-    <ClCompile Include="code\source\Console.cpp" />
-    <ClCompile Include="code\source\main.cpp" />
-    <ClCompile Include="code\source\Messages\MessageBus.cpp" />
-    <ClCompile Include="code\source\Music\Playlist.cpp" />
-    <ClCompile Include="code\source\ScrollableList.cpp" />
-    <ClCompile Include="code\source\State\MenuState.cpp" />
-    <ClCompile Include="code\source\State\PlaylistEditorState.cpp" />
-    <ClCompile Include="code\source\State\PlayState.cpp" />
-    <ClCompile Include="code\source\State\StateMachine.cpp" />
-    <ClCompile Include="code\source\Timer\Time.cpp" />
-    <ClCompile Include="code\source\Timer\Timer.cpp" />
-    <ClCompile Include="code\source\Tools\ColoredStr.cpp" />
-    <ClCompile Include="code\source\Tools\InputDevice.cpp" />
-    <ClCompile Include="code\source\Tools\Tool.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="code\include\App.hpp" />
-    <ClInclude Include="code\include\Console.hpp" />
-    <ClInclude Include="code\include\Message\MessageBus.hpp" />
-    <ClInclude Include="code\include\Message\Messages.hpp" />
-    <ClInclude Include="code\include\Music\Playlist.hpp" />
-    <ClInclude Include="code\include\ScrollableList.hpp" />
-    <ClInclude Include="code\include\State\MenuState.hpp" />
-    <ClInclude Include="code\include\State\PlaylistEditorState.hpp" />
-    <ClInclude Include="code\include\State\PlayState.hpp" />
-    <ClInclude Include="code\include\State\StateMachine.hpp" />
-    <ClInclude Include="code\include\Timer\Time.hpp" />
-    <ClInclude Include="code\include\Timer\Timer.hpp" />
-    <ClInclude Include="code\include\Tools\ColoredStr.hpp" />
-    <ClInclude Include="code\include\Tools\InputDevice.hpp" />
-    <ClInclude Include="code\include\Tools\Tool.hpp" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="data\config.dat" />
     <None Include="data\Loben1.pl" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="data\log.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\App.hpp" />
+    <ClInclude Include="include\core\ColoredStr.hpp" />
+    <ClInclude Include="include\core\Console.hpp" />
+    <ClInclude Include="include\core\InputDevice.hpp" />
+    <ClInclude Include="include\core\MessageBus.hpp" />
+    <ClInclude Include="include\core\Playlist.hpp" />
+    <ClInclude Include="include\core\ScrollableList.hpp" />
+    <ClInclude Include="include\core\SmallMusicPlayer.hpp" />
+    <ClInclude Include="include\core\SmallTools.hpp" />
+    <ClInclude Include="include\core\StateMachine.hpp" />
+    <ClInclude Include="include\core\Time.hpp" />
+    <ClInclude Include="include\core\Timer.hpp" />
+    <ClInclude Include="include\Messages.hpp" />
+    <ClInclude Include="include\State\MenuState.hpp" />
+    <ClInclude Include="include\State\PlaylistEditorState.hpp" />
+    <ClInclude Include="include\State\PlayState.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="source\App.cpp" />
+    <ClCompile Include="source\core\ColoredStr.cpp" />
+    <ClCompile Include="source\core\Console.cpp" />
+    <ClCompile Include="source\core\InputDevice.cpp" />
+    <ClCompile Include="source\core\MessageBus.cpp" />
+    <ClCompile Include="source\core\Playlist.cpp" />
+    <ClCompile Include="source\core\ScrollableList.cpp" />
+    <ClCompile Include="source\core\SmallMusicPlayer.cpp" />
+    <ClCompile Include="source\core\SmallTools.cpp" />
+    <ClCompile Include="source\core\StateMachine.cpp" />
+    <ClCompile Include="source\core\Time.cpp" />
+    <ClCompile Include="source\core\Timer.cpp" />
+    <ClCompile Include="source\main.cpp" />
+    <ClCompile Include="source\State\MenuState.cpp" />
+    <ClCompile Include="source\State\PlaylistEditorState.cpp" />
+    <ClCompile Include="source\State\PlayState.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

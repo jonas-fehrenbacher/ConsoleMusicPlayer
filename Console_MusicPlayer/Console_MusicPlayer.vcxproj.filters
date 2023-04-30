@@ -13,130 +13,18 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Headerdateien\Music">
-      <UniqueIdentifier>{ddcfe6ec-b271-41d4-a1bc-5ecc04d13038}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Headerdateien\Tools">
-      <UniqueIdentifier>{fc129f45-6c4a-4da8-bc59-324b95ddf429}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Quelldateien\Music">
-      <UniqueIdentifier>{645f7d86-cb0f-4772-a29e-d2afd4e2ab54}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Quelldateien\Tools">
-      <UniqueIdentifier>{0d92238c-62ae-451d-a2c8-545302e6ca4a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Headerdateien\Timer">
-      <UniqueIdentifier>{b26e16f7-e8d4-4ec9-86a4-7246bb62f89e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Quelldateien\Timer">
-      <UniqueIdentifier>{48f054b6-2cfc-4b82-a082-0f52a124a931}</UniqueIdentifier>
+    <Filter Include="Headerdateien\core">
+      <UniqueIdentifier>{39d42709-bd19-49fd-87eb-1c0fbed999da}</UniqueIdentifier>
     </Filter>
     <Filter Include="Headerdateien\State">
-      <UniqueIdentifier>{b9d6ed82-e2e3-4ddd-8d93-09821548f32f}</UniqueIdentifier>
+      <UniqueIdentifier>{e0ad237e-5bc7-4a3c-853b-228af5e5811b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quelldateien\core">
+      <UniqueIdentifier>{54b05d65-6704-4530-b704-7d89eedcabb7}</UniqueIdentifier>
     </Filter>
     <Filter Include="Quelldateien\State">
-      <UniqueIdentifier>{6952ebf3-d476-4205-a077-31d1592efd76}</UniqueIdentifier>
+      <UniqueIdentifier>{cfae2d09-bffb-449e-a48c-1de081abd9fc}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Headerdateien\Messages">
-      <UniqueIdentifier>{d7a23b31-b7a2-4e51-b740-365e6c4906e6}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Quelldateien\Messages">
-      <UniqueIdentifier>{ece99cd9-ce04-463d-a788-b09f879630b1}</UniqueIdentifier>
-    </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="code\source\Timer\Time.cpp">
-      <Filter>Quelldateien\Timer</Filter>
-    </ClCompile>
-    <ClCompile Include="code\source\Timer\Timer.cpp">
-      <Filter>Quelldateien\Timer</Filter>
-    </ClCompile>
-    <ClCompile Include="code\source\main.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="code\source\Music\Playlist.cpp">
-      <Filter>Quelldateien\Music</Filter>
-    </ClCompile>
-    <ClCompile Include="code\source\App.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="code\source\State\MenuState.cpp">
-      <Filter>Quelldateien\State</Filter>
-    </ClCompile>
-    <ClCompile Include="code\source\State\PlayState.cpp">
-      <Filter>Quelldateien\State</Filter>
-    </ClCompile>
-    <ClCompile Include="code\source\State\StateMachine.cpp">
-      <Filter>Quelldateien\State</Filter>
-    </ClCompile>
-    <ClCompile Include="code\source\Tools\Tool.cpp">
-      <Filter>Quelldateien\Tools</Filter>
-    </ClCompile>
-    <ClCompile Include="code\source\Messages\MessageBus.cpp">
-      <Filter>Quelldateien\Messages</Filter>
-    </ClCompile>
-    <ClCompile Include="code\source\Tools\InputDevice.cpp">
-      <Filter>Quelldateien\Tools</Filter>
-    </ClCompile>
-    <ClCompile Include="code\source\Tools\ColoredStr.cpp">
-      <Filter>Quelldateien\Tools</Filter>
-    </ClCompile>
-    <ClCompile Include="code\source\State\PlaylistEditorState.cpp">
-      <Filter>Quelldateien\State</Filter>
-    </ClCompile>
-    <ClCompile Include="code\source\ScrollableList.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="code\source\Console.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="code\include\Timer\Time.hpp">
-      <Filter>Headerdateien\Timer</Filter>
-    </ClInclude>
-    <ClInclude Include="code\include\Timer\Timer.hpp">
-      <Filter>Headerdateien\Timer</Filter>
-    </ClInclude>
-    <ClInclude Include="code\include\Music\Playlist.hpp">
-      <Filter>Headerdateien\Music</Filter>
-    </ClInclude>
-    <ClInclude Include="code\include\Tools\Tool.hpp">
-      <Filter>Headerdateien\Tools</Filter>
-    </ClInclude>
-    <ClInclude Include="code\include\App.hpp">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="code\include\State\PlayState.hpp">
-      <Filter>Headerdateien\State</Filter>
-    </ClInclude>
-    <ClInclude Include="code\include\State\MenuState.hpp">
-      <Filter>Headerdateien\State</Filter>
-    </ClInclude>
-    <ClInclude Include="code\include\State\StateMachine.hpp">
-      <Filter>Headerdateien\State</Filter>
-    </ClInclude>
-    <ClInclude Include="code\include\Message\Messages.hpp">
-      <Filter>Headerdateien\Messages</Filter>
-    </ClInclude>
-    <ClInclude Include="code\include\Message\MessageBus.hpp">
-      <Filter>Headerdateien\Messages</Filter>
-    </ClInclude>
-    <ClInclude Include="code\include\Tools\InputDevice.hpp">
-      <Filter>Headerdateien\Tools</Filter>
-    </ClInclude>
-    <ClInclude Include="code\include\Tools\ColoredStr.hpp">
-      <Filter>Headerdateien\Tools</Filter>
-    </ClInclude>
-    <ClInclude Include="code\include\State\PlaylistEditorState.hpp">
-      <Filter>Headerdateien\State</Filter>
-    </ClInclude>
-    <ClInclude Include="code\include\ScrollableList.hpp">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="code\include\Console.hpp">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="data\Loben1.pl">
@@ -150,5 +38,105 @@
     <Text Include="data\log.txt">
       <Filter>Ressourcendateien</Filter>
     </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\core\StateMachine.hpp">
+      <Filter>Headerdateien\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core\Time.hpp">
+      <Filter>Headerdateien\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core\Timer.hpp">
+      <Filter>Headerdateien\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core\ColoredStr.hpp">
+      <Filter>Headerdateien\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core\Console.hpp">
+      <Filter>Headerdateien\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core\InputDevice.hpp">
+      <Filter>Headerdateien\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core\MessageBus.hpp">
+      <Filter>Headerdateien\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core\Playlist.hpp">
+      <Filter>Headerdateien\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core\ScrollableList.hpp">
+      <Filter>Headerdateien\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core\SmallMusicPlayer.hpp">
+      <Filter>Headerdateien\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\State\MenuState.hpp">
+      <Filter>Headerdateien\State</Filter>
+    </ClInclude>
+    <ClInclude Include="include\State\PlaylistEditorState.hpp">
+      <Filter>Headerdateien\State</Filter>
+    </ClInclude>
+    <ClInclude Include="include\State\PlayState.hpp">
+      <Filter>Headerdateien\State</Filter>
+    </ClInclude>
+    <ClInclude Include="include\App.hpp">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Messages.hpp">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core\SmallTools.hpp">
+      <Filter>Headerdateien\core</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="source\core\MessageBus.cpp">
+      <Filter>Quelldateien\core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\core\Playlist.cpp">
+      <Filter>Quelldateien\core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\core\ScrollableList.cpp">
+      <Filter>Quelldateien\core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\core\SmallMusicPlayer.cpp">
+      <Filter>Quelldateien\core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\core\StateMachine.cpp">
+      <Filter>Quelldateien\core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\core\Time.cpp">
+      <Filter>Quelldateien\core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\core\Timer.cpp">
+      <Filter>Quelldateien\core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\core\ColoredStr.cpp">
+      <Filter>Quelldateien\core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\core\Console.cpp">
+      <Filter>Quelldateien\core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\core\InputDevice.cpp">
+      <Filter>Quelldateien\core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\State\PlaylistEditorState.cpp">
+      <Filter>Quelldateien\State</Filter>
+    </ClCompile>
+    <ClCompile Include="source\State\PlayState.cpp">
+      <Filter>Quelldateien\State</Filter>
+    </ClCompile>
+    <ClCompile Include="source\State\MenuState.cpp">
+      <Filter>Quelldateien\State</Filter>
+    </ClCompile>
+    <ClCompile Include="source\App.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="source\main.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="source\core\SmallTools.cpp">
+      <Filter>Quelldateien\core</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
