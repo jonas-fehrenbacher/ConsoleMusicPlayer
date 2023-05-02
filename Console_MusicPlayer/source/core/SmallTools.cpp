@@ -1,5 +1,5 @@
 #include "core/SmallTools.hpp"
-#include "core/ColoredStr.hpp"
+#include "core/Console.hpp"
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -13,27 +13,46 @@
 
 namespace core::uc
 {
-	const char* fullBlock                     = u8"\u2588";
-	const char* infinity                      = u8"\u221E";
-	const char* latinSmallLetterOu            = u8"\u0223"; // shuffle
-	const char* copticCapitalLetterGangia     = u8"\u03EA"; // shuffle
-	const char* combiningCyrillicMillionsSign = u8"\u0489"; // shuffle
-	const char* leftwardsArrow                = u8"\u2190";
-	const char* blackRightPointingPointer     = u8"\u25BA"; // play
-	const char* doubleVerticalLine            = u8"\u2016"; // pause
-	const char* boxDrawingsDoubleVertical     = u8"\u2551"; // pause
-	const char* latinLetterLateralClick       = u8"\u01C1"; // pause
-	const char* blackSquare                   = u8"\u25A0"; // stop
-	const char* rightwardsArrow               = u8"\u2192";
-	const char* eighthNote                    = u8"\u266A";
-	const char* beamedEighthNotes             = u8"\u266B";
-	const char* modifierLetterUpArrowhead     = u8"\u02C4";
-	const char* modifierLetterDownArrowhead   = u8"\u02C5";
-	const char* overline                      = u8"\u203E";
-	const char* ballotBoxWithCheck            = u8"\u2611";
-	const char* ballotBox                     = u8"\u2610";
-	const char* upwardsArrow                  = u8"\u2191";
-	const char* downwardsArrow                = u8"\u2193";
+	const char* fullBlock                       = u8"\u2588";
+	const char* infinity                        = u8"\u221E";
+	const char* latinSmallLetterOu              = u8"\u0223"; // shuffle
+	const char* copticCapitalLetterGangia       = u8"\u03EA"; // shuffle
+	const char* combiningCyrillicMillionsSign   = u8"\u0489"; // shuffle
+	const char* leftwardsArrow                  = u8"\u2190";
+	const char* blackRightPointingPointer       = u8"\u25BA"; // play
+	const char* doubleVerticalLine              = u8"\u2016"; // pause
+	const char* boxDrawingsDoubleVertical       = u8"\u2551"; // pause
+	const char* latinLetterLateralClick         = u8"\u01C1"; // pause
+	const char* blackSquare                     = u8"\u25A0"; // stop
+	const char* rightwardsArrow                 = u8"\u2192";
+	const char* eighthNote                      = u8"\u266A";
+	const char* beamedEighthNotes               = u8"\u266B";
+	const char* modifierLetterUpArrowhead       = u8"\u02C4";
+	const char* modifierLetterDownArrowhead     = u8"\u02C5";
+	const char* overline                        = u8"\u203E";
+	const char* ballotBoxWithCheck              = u8"\u2611";
+	const char* ballotBox                       = u8"\u2610";
+	const char* upwardsArrow                    = u8"\u2191";
+	const char* downwardsArrow                  = u8"\u2193";
+	const char* blackUpPointingTriangle         = u8"\u25B2";
+	const char* blackDownPointingTriangle       = u8"\u25BC";
+	const char* blackRightPointingTriangle      = u8"\u25B6";
+	const char* boxDrawingsLightHorizontal      = u8"\u2500";
+	const char* boxDrawingsHeavyHorizontal      = u8"\u2501";
+	const char* boxDrawingsLightVertical        = u8"\u2502";
+	const char* boxDrawingsHeavyVertical        = u8"\u2503";
+	const char* boxDrawingsLightDownAndRight    = u8"\u250C";
+	const char* boxDrawingsHeavyDownAndRight    = u8"\u250F";
+	const char* boxDrawingsLightDownAndLeft     = u8"\u2510";
+	const char* boxDrawingsHeavyDownAndLeft     = u8"\u2513";
+	const char* boxDrawingsLightUpAndRight      = u8"\u2514";
+	const char* boxDrawingsHeavyUpAndRight      = u8"\u2517";
+	const char* boxDrawingsLightUpAndLeft       = u8"\u2518";
+	const char* boxDrawingsHeavyUpAndLeft       = u8"\u251B";
+	const char* boxDrawingsLightArcDownAndRight = u8"\u256D";
+	const char* boxDrawingsLightArcDownAndLeft  = u8"\u256E";
+	const char* boxDrawingsLightArcUpAndLeft    = u8"\u256F";
+	const char* boxDrawingsLightArcUpAndRight   = u8"\u2570";
 }
 
 void core::log(std::string message)
@@ -56,6 +75,10 @@ long long core::getUUID()
 
 std::string core::getTimeStr(core::Time time, core::Time limit /*= 0ns*/)
 {
+	if (limit == 0s && time == 0s) {
+		return "0:00";
+	}
+
 	if (limit == 0s) {
 		limit = time;
 	}
@@ -193,7 +216,7 @@ void core::testColors()
 {
 	for (int bgcolor = 0; bgcolor < 16; ++bgcolor) {
 		for (int fgcolor = 0; fgcolor < 16; ++fgcolor) {
-			std::cout << std::left << std::setw(4) << ColoredStr(std::to_string(fgcolor + bgcolor * 16), (Color)fgcolor, (Color)bgcolor);
+			std::cout << std::left << std::setw(4) << Text(std::to_string(fgcolor + bgcolor * 16), (Color)fgcolor, (Color)bgcolor);
 		}
 		std::cout << "\n";
 	}

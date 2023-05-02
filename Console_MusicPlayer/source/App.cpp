@@ -11,17 +11,22 @@
 #include <SDL_mixer.h>
 #include <codecvt>
 #include <locale>
+#include <iostream>
+#include <thread>
 
 intern std::vector<fs::path> getMusicDirsFromConfig();
+intern App::Style getStyle();
+intern void loadingScreen(std::atomic_bool* isInitializing, App::LoadingScreenStyle style);
 App::App() :
+	messageBus(),
 	isRunning(true),
 	stateMachine(),
 	menuState(this),
 	playState(this),
 	playlistEditorState(this),
 	drawTimer(),
-	messageBus(),
-	musicDirs() // do not initialize here, because maybe config.dat does not exist.
+	musicDirs(), // do not initialize here, because maybe config.dat does not exist.
+	style()
 {
 	core::console::init();
 	core::console::setTitle("Console Music Player");
@@ -38,20 +43,22 @@ App::App() :
 	SetConsoleCP(CP_UTF8); // optional
 	//char* a = setlocale(LC_ALL, ".UTF8");
 	//SetConsoleOutputCP(437);
-	core::console::setFont(L"Consolas"); // Consolas, core::console::DEFAULT_UNICODE_FONTNAME
+	core::console::setFont(L"Consolas", 24); // Consolas, core::console::DEFAULT_UNICODE_FONTNAME
 	/* Good fonts:
 	 * - Consolas
 	 * - DejaVu Sans Mono (some unicode)
 	 * - Source Code Pro Semibold
 	 */
 
+	// Set style:
+	// ..set this before the loading screen!
+	style = getStyle();
+	core::console::setFgColor(style.fgcolor);
+	core::console::setBgColor(style.bgcolor);
+
 	// Loading screen:
-	core::Color bgcolor = core::Color::Bright_White;
-	std::string title = "Console Music Player "s + core::uc::eighthNote;
-	int drawPos = core::console::getCharCount().x / 2.f - (title.length() - 2) / 2.f; // -2 because std::string cannot handle unicode characters - the length is to much.
-	title.insert(0, drawPos, ' ');
-	std::cout << core::endl{ bgcolor } << core::ColoredStr(title, core::Color::Black, bgcolor) << core::endl{ bgcolor } << core::endl{ bgcolor } << core::endl{ core::Color::White } << core::endl{ };
-	std::cout << "\tLoading music, please wait...\n";
+	std::atomic_bool isInitializing = true;
+	std::thread loadingThread(loadingScreen, &isInitializing, style.loadingScreen);
 
 	// Init SDL2:
 	if (SDL_Init(SDL_INIT_EVERYTHING) < 0) { // enables to invoke SDL2 functions
@@ -117,6 +124,109 @@ App::App() :
 	// ..after folder and files are created:
 	stateMachine.add(&menuState);
 	messageBus.add(std::bind(&App::onMessage, this, std::placeholders::_1));
+
+	// Wait for thread:
+	//std::this_thread::sleep_for(10s);
+	isInitializing = false;
+	loadingThread.join(); // wait for the thread.
+}
+
+App::Style getStyle()
+{
+	App::Style style;
+
+	// Set app style:
+	style.fgcolor = core::Color::White;
+	style.bgcolor = core::Color::Black;
+	// style.loadingScreen:
+	style.loadingScreen.background      = core::Color::White;
+	style.loadingScreen.title           = core::Color::Black;
+	style.loadingScreen.loadingText     = core::Color::Gray;
+	style.loadingScreen.loadingTextAnim = core::Color::Bright_White;
+	// style.scrollableList:
+	style.scrollableList.border              = core::Color::Gray;
+	style.scrollableList.title               = core::Color::Bright_White;
+	style.scrollableList.scrollbarArrow      = core::Color::Aqua;
+	style.scrollableList.scrollbar           = core::Color::Aqua;
+	style.scrollableList.scrollbarEmptySpace = core::Color::White;
+	style.scrollableList.item                = core::Color::White;
+	style.scrollableList.borderItem          = core::Color::Gray;
+	style.scrollableList.selected            = core::Color::Green;
+	style.scrollableList.hover               = core::Color::Bright_White;
+	// style.menu:
+	style.menu.arrow     = core::Color::Gray;
+	style.menu.item      = core::Color::Black;
+	style.menu.selected  = core::Color::Bright_White;
+	style.menu.hover     = core::Color::Black;
+	style.menu.statusOn  = core::Color::Green;
+	style.menu.statusOff = core::Color::Gray;
+
+	style.menu.durationProgressBar     = core::Color::White;
+	style.menu.durationProgressBarText = core::Color::Black;
+	style.menu.durationText            = core::Color::Black;
+	// style.smallMusicPlayer
+	style.smallMusicPlayer.title     = core::Color::Gray;
+	style.smallMusicPlayer.duration  = core::Color::White;
+	style.smallMusicPlayer.status    = core::Color::White;
+	style.smallMusicPlayer.statusOn  = core::Color::Green;
+	style.smallMusicPlayer.statusOff = core::Color::Red;
+	style.smallMusicPlayer.border    = core::Color::Gray;
+	// style.playState
+	style.playState.durationProgressBar     = core::Color::Light_Purple;
+	style.playState.durationProgressBarText = core::Color::Bright_White;
+	style.playState.durationText            = core::Color::Black;
+	style.playState.text                    = core::Color::White;
+
+	return style;
+}
+
+
+intern void loadingScreen(std::atomic_bool* isInitializing, App::LoadingScreenStyle style)
+{
+	// ..is called in an separate thread
+	core::console::setBgColor(style.background);
+	std::string title = "Console Music Player "s + core::uc::eighthNote;
+	std::string loadingText = "Loading music, please wait...";
+	std::string rotatingSlash = u8"\\|/\u2500"s + core::uc::boxDrawingsLightHorizontal;
+	int rotatingSlashIndex = 0;
+	int highlightIndex = 0; // for animation
+	core::Timer animTimer;
+	bool isHighlightAnimFinished = false;
+	while ( *isInitializing)
+	{
+		if (!isHighlightAnimFinished && animTimer.getElapsedTime() >= 200ms && highlightIndex < loadingText.length()) {
+			++highlightIndex;
+			animTimer.restart();
+			isHighlightAnimFinished = highlightIndex == loadingText.length();
+			if (isHighlightAnimFinished) --highlightIndex;
+		}
+
+		if (isHighlightAnimFinished && animTimer.getElapsedTime() >= 150ms) {
+			rotatingSlashIndex = ++rotatingSlashIndex % 4;
+			animTimer.restart();
+		}
+
+		int titlePosX = core::console::getCharCount().x / 2.f - (title.length() - 2) / 2.f;// -2 because std::string cannot handle unicode characters - the length is to much.
+		int loadingPosX = core::console::getCharCount().x / 2.f - (loadingText.length() - 2) / 2.f;
+		int posY = core::console::getCharCount().y / 2.f - 2;
+		// Draw:
+		std::cout << core::endl(posY)
+			// title:
+			<< std::string(titlePosX, ' ') << core::Text(title, style.title) << core::endl()
+			// loading text:
+			<< std::string(loadingPosX, ' ') 
+			<< core::Text(loadingText.substr(0, highlightIndex), style.loadingText) 
+			<< core::Text(""s + loadingText.at(highlightIndex), isHighlightAnimFinished ? style.loadingText : style.loadingTextAnim) // draw only until highlightIndex - is more interesting and nice then drawing everything.
+			<< core::endl();
+
+		if (isHighlightAnimFinished) {
+			// ..start next animation
+			// Note that unicode character takes up 3 characters instead of 1.
+			std::cout << std::string(core::console::getCharCount().x / 2.f, ' ') << core::Text(rotatingSlash.substr(rotatingSlashIndex, rotatingSlashIndex == 3 ? 3 : 1), style.loadingTextAnim);
+		}
+
+		core::console::clearScreen();
+	}
 }
 
 intern std::vector<fs::path> getMusicDirsFromConfig()

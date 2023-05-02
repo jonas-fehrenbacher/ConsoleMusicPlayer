@@ -14,6 +14,20 @@ class App;
 class MenuState : public core::State
 {
 public:
+    struct Style
+    {
+        core::Color arrow;
+        core::Color item;
+        core::Color selected;
+        core::Color hover;
+        core::Color statusOn;
+        core::Color statusOff;
+
+        core::Color durationProgressBar;
+        core::Color durationProgressBarText;
+        core::Color durationText;
+    };
+
     MenuState(App* app);
 
     void init() override;
@@ -42,6 +56,8 @@ private:
     core::ScrollableList       directoryList;
     core::SmallMusicPlayer     smallMusicPlayer;
     bool                       drawKeyInfo;
+    Style                      style;
+    bool                       firstInit;
 
     void initMusicList();
     void initDirectories();

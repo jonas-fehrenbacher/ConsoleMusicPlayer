@@ -3,7 +3,7 @@
 #include "App.hpp"
 #include "core/SmallTools.hpp"
 #include "core/InputDevice.hpp"
-#include "core/ColoredStr.hpp"
+#include <iostream>
 
 PlaylistEditorState::PlaylistEditorState(App* app) :
 	app(app)
@@ -36,7 +36,7 @@ void PlaylistEditorState::handleEvent()
 void PlaylistEditorState::draw()
 {
 	for (auto& musicDir : app->musicDirs) {
-		std::cout << core::ColoredStr(musicDir.string(), core::Color::White) << "\n";
+		std::cout << core::Text(musicDir.string(), core::Color::White) << "\n";
 		for (auto& it : fs::recursive_directory_iterator(musicDir)) {
 			if (core::isSupportedAudioFile(it.path())) {
 				std::cout << "\t" << it.path() << "\n";

@@ -1,16 +1,38 @@
 #pragma once
 
 #include "Playlist.hpp"
-#include "ColoredStr.hpp"
+#include "Console.hpp"
 
 namespace core
 {
 	class SmallMusicPlayer
 	{
 	public:
+		enum Replay
+		{
+			None = 0, // Loop deactivated
+			One = 1, // Loop currently playing music
+			All = 2, // Loop playlist - all music
+			Count = 3
+		};
+
+		struct Style
+		{
+			core::Color title;
+			core::Color duration;
+			core::Color status;
+			core::Color statusOn;
+			core::Color statusOff;
+			core::Color border;
+		};
+
+		core::Text  skipReport;
+		Replay      replay;
+		core::Text  volumeReport;
+
 		SmallMusicPlayer();
 
-		void init(std::vector<fs::path> musicDirs, int drawSize, int drawPosX);
+		void init(std::vector<fs::path> musicDirs, int drawSize, int drawPosX, Style style);
 		void terminate();
 		void update();
 		void handleEvent();
@@ -26,23 +48,15 @@ namespace core
 		const core::Playlist& getPlaylist() const;
 		bool isStopped();
 	private:
-		enum Replay
-		{
-			None  = 0, // Loop deactivated
-			One   = 1, // Loop currently playing music
-			All   = 2, // Loop playlist - all music
-			Count = 3
-		};
-
 		Playlist playlist;
 		int      drawSize;
 		int      drawPosX;
+		Style    style;
 
-		core::ColoredStr volumeReport;
-		core::Timer      cooldownVolumeReport;
-		core::ColoredStr skipReport;
-		core::Timer      cooldownSkipReport;
-		bool             drawKeyInfo;
-		Replay           replay;
+		
+		core::Timer cooldownVolumeReport;
+		
+		core::Timer cooldownSkipReport;
+		bool        drawKeyInfo;
 	};
 }

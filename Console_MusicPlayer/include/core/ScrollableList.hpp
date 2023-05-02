@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <string>
+#include "Console.hpp"
 
 namespace core
 {
@@ -14,10 +15,26 @@ namespace core
 			None          = 0,
 			SelectionMode = 1 << 0, // you can select items in this mode, not just scroll.
 			ArrowInput    = 1 << 1, // You can scroll and use arrows
-			DrawCentered  = 1 << 2 // Box is drawed in the center of the console instead of one tab from the left.
+			DrawCentered  = 1 << 2, // Box is drawed in the center of the console instead of one tab from the left; Either this or DrawFullX can be active
+			DrawFullX     = 1 << 3  // Draws on x axis completly; Either this or DrawCentered can be active
 		};
 
-		void init(Options options, int maxDrawnItems = 15, int maxDrawnItemNameLength = 60, size_t hover = 0);
+		struct Style
+		{
+			core::Color border;
+			core::Color title;
+			core::Color scrollbarArrow;
+			core::Color scrollbar;
+			core::Color scrollbarEmptySpace;
+			core::Color item;
+			core::Color borderItem;
+			core::Color selected;
+			core::Color hover;
+		};
+
+		Style style;
+
+		void init(Options options, Style style, std::string name, int maxDrawnItems = 15, int maxDrawnItemNameLength = 60, size_t hover = 0);
 		void terminate();
 		void update();
 		void handleEvent();
@@ -59,7 +76,10 @@ namespace core
 		bool                     isTrappedOnBottom_;
 		bool                     hasFocus;
 		int                      posX; // draw position on the x axis (in characters)
+		std::string              name;
 
 		void move(bool up);
+		int getNonTitleElementsLength() const;
+		void drawBorder(bool isTop) const;
 	};
 }

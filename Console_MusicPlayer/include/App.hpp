@@ -5,18 +5,41 @@
 #include "core/Timer.hpp"  
 #include "core/StateMachine.hpp"
 #include "core/MessageBus.hpp"
+#include "core/ScrollableList.hpp"
+#include "core/SmallMusicPlayer.hpp"
 
 class App
 {
 public:
+	struct LoadingScreenStyle
+	{
+		core::Color background;
+		core::Color title;
+		core::Color loadingText;
+		core::Color loadingTextAnim;
+	};
+
+	/** Use this to set different themes. */
+	struct Style
+	{
+		core::Color                   fgcolor; //< default color if nothing is specified
+		core::Color                   bgcolor; //< default color if nothing is specified
+		LoadingScreenStyle            loadingScreen;
+		core::ScrollableList::Style   scrollableList;
+		core::SmallMusicPlayer::Style smallMusicPlayer;
+		MenuState::Style              menu;
+		PlayState::Style              playState;
+	};
+
+	core::MessageBus      messageBus;
 	bool                  isRunning;
 	core::StateMachine    stateMachine;
 	MenuState             menuState;
 	PlayState             playState;
 	PlaylistEditorState   playlistEditorState;
-	core::MessageBus      messageBus;
 	std::vector<fs::path> musicDirs;
 	fs::path              currPlaylist;
+	Style                 style;
 
 	explicit App();
 	explicit App(const App& other) = delete;

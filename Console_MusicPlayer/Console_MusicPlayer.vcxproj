@@ -147,7 +147,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\App.hpp" />
-    <ClInclude Include="include\core\ColoredStr.hpp" />
     <ClInclude Include="include\core\Console.hpp" />
     <ClInclude Include="include\core\InputDevice.hpp" />
     <ClInclude Include="include\core\MessageBus.hpp" />
@@ -165,7 +164,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\App.cpp" />
-    <ClCompile Include="source\core\ColoredStr.cpp" />
     <ClCompile Include="source\core\Console.cpp" />
     <ClCompile Include="source\core\InputDevice.cpp" />
     <ClCompile Include="source\core\MessageBus.cpp" />

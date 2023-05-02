@@ -49,9 +49,6 @@
     <ClInclude Include="include\core\Timer.hpp">
       <Filter>Headerdateien\core</Filter>
     </ClInclude>
-    <ClInclude Include="include\core\ColoredStr.hpp">
-      <Filter>Headerdateien\core</Filter>
-    </ClInclude>
     <ClInclude Include="include\core\Console.hpp">
       <Filter>Headerdateien\core</Filter>
     </ClInclude>
@@ -109,9 +106,6 @@
       <Filter>Quelldateien\core</Filter>
     </ClCompile>
     <ClCompile Include="source\core\Timer.cpp">
-      <Filter>Quelldateien\core</Filter>
-    </ClCompile>
-    <ClCompile Include="source\core\ColoredStr.cpp">
       <Filter>Quelldateien\core</Filter>
     </ClCompile>
     <ClCompile Include="source\core\Console.cpp">

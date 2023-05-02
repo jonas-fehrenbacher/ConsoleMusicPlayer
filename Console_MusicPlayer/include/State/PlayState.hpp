@@ -3,7 +3,7 @@
 #include "core/StateMachine.hpp"
 #include "core/Timer.hpp"
 #include "core/Playlist.hpp"
-#include "core/ColoredStr.hpp"
+#include "core/Console.hpp"
 #include "core/ScrollableList.hpp"
 #include "core/MessageBus.hpp"
 
@@ -12,6 +12,14 @@ class App;
 class PlayState : public core::State
 {
 public:
+    struct Style
+    {
+        core::Color durationProgressBar;
+        core::Color durationProgressBarText;
+        core::Color durationText;
+        core::Color text;
+    };
+
     PlayState(App* app);
 
     void init() override;
@@ -23,9 +31,9 @@ public:
     void setPlaylist(fs::path playlistPath);
 private:
     App*                 app;
-    core::ColoredStr     volumeReport;
+    core::Text           volumeReport;
     core::Timer          cooldownVolumeReport;
-    core::ColoredStr     skipReport;
+    core::Text           skipReport;
     core::Timer          cooldownSkipReport;
     core::Time           totalRunTime;
     core::Timer          totalRunTimeClock;
@@ -33,6 +41,8 @@ private:
     core::ScrollableList musicList;
     bool                 drawKeyInfo;
     fs::path             playlistPath; // selected in menu
+    Style                style;
+    bool                 firstInit;
 
     void onMessage(core::Message message);
 };

@@ -6,16 +6,18 @@
 #include <Windows.h>
 #include <algorithm>
 #include <cassert>
+#include <iostream>
 
 namespace core {
 	intern const size_t NOINDEX = -1; // -1 stands for no index (see 'selected')
 }
 
-void core::ScrollableList::init(Options options, int maxDrawnItems /*= 10*/, int maxDrawnItemNameLength /*= 60*/, size_t hover /*= 0*/)
+void core::ScrollableList::init(Options options, Style style, std::string name, int maxDrawnItems /*= 10*/, int maxDrawnItemNameLength /*= 60*/, size_t hover /*= 0*/)
 {
+	this->name = name;
 	this->maxDrawnItems = maxDrawnItems;
-	this->maxDrawnItemNameLength = maxDrawnItemNameLength;
 	this->hover = hover;
+	this->style = style;
 	this->selected = NOINDEX;
 	drawnItemsSelectionPos = 0;
 	isTrappedOnTop_ = false;
@@ -23,6 +25,7 @@ void core::ScrollableList::init(Options options, int maxDrawnItems /*= 10*/, int
 	startDrawIndex = 0;
 	hasFocus = true;
 	this->options = options;
+	this->maxDrawnItemNameLength = maxDrawnItemNameLength;
 
 	onConsoleResize();
 }
@@ -124,10 +127,9 @@ void core::ScrollableList::move(bool up)
 	}
 }
 
-intern void drawBorder(int size, bool isTop, int posX);
 void core::ScrollableList::draw()
 {
-	drawBorder(getDrawSize(), true, posX);
+	drawBorder(true);
 	//std::cout << core::endl();
 
 	if (maxDrawnItems <= 0) {
@@ -137,7 +139,7 @@ void core::ScrollableList::draw()
 		std::cout << std::string(posX, ' ') << "Nothing found!" << core::endl();
 	}
 	else {
-		core::ColoredStr line("", Color::White);
+		core::Text line("");
 		std::stringstream ss;
 		bool colorState = true;
 		int drawnItemCount = list.size() < maxDrawnItems ? list.size() : maxDrawnItems;
@@ -145,7 +147,7 @@ void core::ScrollableList::draw()
 			// Set line text:
 			ss.str("");
 			std::string name = list[i].substr(0, maxDrawnItemNameLength) + (list[i].length() > maxDrawnItemNameLength ? "..." : "");
-			ss << std::string(posX, ' ') << std::left << std::setw(5) << std::to_string((i + 1)) + "." << name;
+			ss << std::right << std::setw(4) << std::to_string((i + 1)) << "   " << name << " ";
 			// core::endl() does not work for last item here, so I use it bellow.
 			line = ss.str();
 			// Set line color:
@@ -158,20 +160,25 @@ void core::ScrollableList::draw()
 				bool isLastItem = i == list.size() - 1;
 				if (((isFirstDrawn && !isFirstItem) || (isLastDrawn && !isLastItem)) && list.size() > maxDrawnItems) {
 					// ...drawn item is at the top or bottom, but you can scroll higher or lower.
-					line.fgcolor = Color::Gray;
+					line.fgcolor = style.borderItem;
+					line.bgcolor = core::Color::None;
 				}
 				else {
-					line.fgcolor = Color::White; // colorState ? Color::White : Color::Bright_White;
+					line.fgcolor = style.item; // colorState ? Color::White : Color::Bright_White;
+					line.bgcolor = core::Color::None;
 				}
 				if (hasFocus && hasFlag(Options::SelectionMode, options) && i == hover) {
 					assert(hover != NOINDEX);
-					line.fgcolor = Color::Light_Aqua; // Light_Green, Light_Aqua; Light_Yellow, Bright_White
+					line.fgcolor = core::Color::Black;
+					line.bgcolor = style.hover; // Light_Green, Light_Aqua; Light_Yellow, Bright_White
 				}
 				else if (hasFlag(Options::SelectionMode, options) && i == selected) {
-					line.fgcolor = Color::Aqua;
+					line.fgcolor = core::Color::Black;
+					line.bgcolor = style.selected;
 				}
 			}
 			// Output:
+			std::cout << std::string(posX, ' ') << core::Text(core::uc::boxDrawingsLightVertical, style.border);
 			std::cout << line;
 
 			// Output scrollbar:
@@ -202,34 +209,48 @@ void core::ScrollableList::draw()
 			}
 			assert(scrollbarTop_itemIndex >= 0 && scrollbarBottom_itemIndex <= drawnItemCount - 1);
 
+			int boxRightPos = posX + (getDrawSize() - 2);
+			int offset = boxRightPos - core::console::getCursorPos().x;
+			std::cout << core::Text(std::string(offset, ' '), core::Color::None, line.bgcolor) << " ";
 			if (i >= startDrawIndex + scrollbarTop_itemIndex && i <= startDrawIndex + scrollbarBottom_itemIndex) {
-				int boxRightPos = posX + (getDrawSize() - 2);
-				int offset = boxRightPos - core::console::getCursorPos().x;
-				std::cout << std::string(offset, ' ') << core::ColoredStr(" "s + uc::fullBlock, Color::Aqua);
+				
+				std::cout << core::Text(" "s, core::Color::Black, style.scrollbar);
+			}
+			else {
+				std::cout << core::Text(" "s, core::Color::Black, style.scrollbarEmptySpace);
 			}
 			std::cout << core::endl();
 		}
 	}
 	std::cout.flush();
-	drawBorder(getDrawSize(), false, posX);
+	drawBorder(false);
 }
 
-intern void drawBorder(int size, bool isTop, int posX)
+void core::ScrollableList::drawBorder(bool isTop) const
 {
 	std::string border = "";
-	for (int i = 0; i < size - 2; ++i) { // size-2 because size includes " ^" / " v"
-		border += isTop ? "_" : core::uc::overline;
+	std::string title = isTop ? " " + name + " " : "";
+	for (int i = 0, borderLength = border.length(); i < (getDrawSize() - 4) - title.length(); ++i) { // size-2 because size includes " ^" / " v"
+		border +=  core::uc::boxDrawingsLightHorizontal;
 	}
-	std::cout << std::string(posX, ' ') << core::ColoredStr(border, core::Color::Gray) << " "
-		<< (isTop ? core::uc::modifierLetterUpArrowhead : core::uc::modifierLetterDownArrowhead)
+	std::cout << std::string(posX, ' ') 
+		<< core::Text(std::string(isTop ? core::uc::boxDrawingsLightDownAndRight : core::uc::boxDrawingsLightUpAndRight) + core::uc::boxDrawingsLightHorizontal, style.border)
+		<< core::Text(title, style.title)
+		<< core::Text(border, style.border) << " "
+		<< core::Text(isTop ? core::uc::blackUpPointingTriangle : core::uc::blackDownPointingTriangle, style.scrollbarArrow)
 		<< core::endl();
 }
 
 void core::ScrollableList::onConsoleResize()
 {
-	posX = core::tab::size; // one tab from the left (8 chars)
+	posX = 1;
 	if (hasFlag(Options::DrawCentered, options)) {
 		posX = console::getCharCount().x / 2.f - getDrawSize() / 2.f;
+	}
+
+	if (hasFlag(Options::DrawFullX, options)) {
+		// ..to draw over the full x axis we draw as much as possible
+		this->maxDrawnItemNameLength = getDrawSize() - getNonTitleElementsLength();
 	}
 }
 
@@ -303,7 +324,21 @@ std::string core::ScrollableList::getHover()
 int core::ScrollableList::getDrawSize() const
 {
 	// Border length:
-	return maxDrawnItemNameLength + 3 + 5 + 2; // +3: "...", +5: "300. ", +2 " ^"
+	int size = 0;
+	if (hasFlag(Options::DrawCentered, options) || !hasFlag(Options::DrawFullX, options)) {
+		size = maxDrawnItemNameLength + getNonTitleElementsLength();
+	}
+	else if (hasFlag(Options::DrawFullX, options)) {
+		size = core::console::getCharCount().x - 3; // try to draw as much as possible
+	}
+
+	return size;
+}
+
+int core::ScrollableList::getNonTitleElementsLength() const
+{
+	//     "| " + "3000" + "   " + "..." + " ^"
+	return  2   +  4     +  3    +  3    +  2;
 }
 
 int core::ScrollableList::getPosX() const

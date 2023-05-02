@@ -1,14 +1,11 @@
 #include "core/Console.hpp"
 #include "core/SmallTools.hpp"
-#include "core/ColoredStr.hpp"
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <ostream>
 #include <iostream>
 #include <sstream>
-
-int core::tab::size = 8;
 
 namespace core::console
 {
@@ -25,6 +22,8 @@ namespace core::console
 	CONSOLE_FONT_INFOEX        defaultFontInfo;
 	HANDLE                     hOut = NULL;
 	Options                    options = (Options)0;
+	Color                      fgcolor = Color::White;
+	Color                      bgcolor = Color::Black;
 }
 
 void core::console::init()
@@ -236,7 +235,7 @@ void core::console::setCursorPos(Vec2 pos)
 	}
 }
 
-void core::console::setFont(std::wstring fontName)
+void core::console::setFont(std::wstring fontName, short size /*= 27*/)
 {
 	// Get old font info:
 	//defaultFontInfo.cbSize = sizeof(defaultFontInfo);
@@ -245,8 +244,8 @@ void core::console::setFont(std::wstring fontName)
 	CONSOLE_FONT_INFOEX fontInfo;
 	fontInfo.cbSize = sizeof(fontInfo);
 	fontInfo.nFont = 0;
-	fontInfo.dwFontSize.X = 0;                   // Width of each character in the font
-	fontInfo.dwFontSize.Y = 27;                  // Height, 24
+	fontInfo.dwFontSize.X = 0;         // Width of each character in the font
+	fontInfo.dwFontSize.Y = size;      // Height, 24
 	fontInfo.FontFamily = FF_DONTCARE; // FF_MODERN << 4 | TMPF_VECTOR | TMPF_TRUETYPE; // FF_DONTCARE
 	fontInfo.FontWeight = FW_NORMAL;
 	std::wcscpy(fontInfo.FaceName, fontName.c_str()); // Choose your font ("Consolas"); "Lucida Sans Unicode" is a unicode font! fontName.c_str()
@@ -261,6 +260,18 @@ void core::console::setFont(std::wstring fontName)
 void core::console::setTitle(std::string title)
 {
 	SetConsoleTitle(title.c_str());
+}
+
+void core::console::setFgColor(Color color)
+{
+	fgcolor = color;
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), (WORD)((int)bgcolor * 16 + (int)fgcolor));
+}
+
+void core::console::setBgColor(Color color)
+{
+	bgcolor = color;
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), (WORD)((int)bgcolor * 16 + (int)fgcolor));
 }
 
 core::Vec2 core::console::getCharCount()
@@ -281,6 +292,16 @@ core::Vec2 core::console::getCursorPos()
 	return { cbsi.dwCursorPosition.X, cbsi.dwCursorPosition.Y };
 }
 
+core::console::Color core::console::getFgColor()
+{
+	return fgcolor;
+}
+
+core::console::Color core::console::getBgColor()
+{
+	return bgcolor;
+}
+
 void core::console::hideCursor()
 {
 	CONSOLE_CURSOR_INFO cursorInfo;
@@ -289,33 +310,122 @@ void core::console::hideCursor()
 	SetConsoleCursorInfo(hOut, &cursorInfo);
 }
 
-std::ostream& operator<<(std::ostream& stream, const core::endl& endl)
+// tab: ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int core::console::tab::size = 8;
+
+core::console::tab::tab() :
+	bgcolor(Color::None)
 {
-	int fillLength = core::console::getCharCount().x - core::console::getCursorPos().x;
-	std::string postStr(fillLength, ' ');
-	std::cout << core::ColoredStr(postStr, core::Color::White, endl.bgcolor) << "\n";
+
+}
+
+core::console::tab::tab(Color bgcolor) :
+	bgcolor(bgcolor)
+{
+
+}
+
+std::ostream& operator<<(std::ostream& stream, const core::console::tab& _tab)
+{
+	static const std::string tab(core::console::tab::size, ' ');
+	std::cout << core::console::Text(tab, core::console::Color::White, _tab.bgcolor);
+	return stream;
+}
+
+std::wostream& operator<<(std::wostream& stream, const core::console::tab& _tab)
+{
+	static const std::string tab(core::console::tab::size, ' ');
+	std::wcout << core::console::Text(tab, core::console::Color::White, _tab.bgcolor);
+	return stream;
+}
+
+// endl: ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+core::console::endl::endl() :
+	count(1),
+	bgcolor(Color::None)
+{
+
+}
+
+core::console::endl::endl(int count, console::Color bgcolor /*= Color::None*/) :
+	count(count),
+	bgcolor(bgcolor)
+{
+
+}
+
+core::console::endl::endl(Color bgcolor) :
+	count(1),
+	bgcolor(bgcolor)
+{
+
+}
+
+std::ostream& operator<<(std::ostream& stream, const core::console::endl& endl)
+{
+	for (int i = 0; i < endl.count; ++i) {
+		int fillLength = core::console::getCharCount().x - core::console::getCursorPos().x;
+		std::string postStr(fillLength, ' ');
+		std::cout << core::console::Text(postStr, core::console::Color::White, endl.bgcolor) << "\n";
+	}
 	return stream;
 }
 
 std::wostream& operator<<(std::wostream& stream, const core::endl& endl)
 {
-	int fillLength = core::console::getCharCount().x - core::console::getCursorPos().x;
-	std::string postStr(fillLength, ' ');
-	std::wcout << core::ColoredStr(postStr, core::Color::White, endl.bgcolor) << "\n";
+	for (int i = 0; i < endl.count; ++i) {
+		int fillLength = core::console::getCharCount().x - core::console::getCursorPos().x;
+		std::string postStr(fillLength, ' ');
+		std::wcout << core::console::Text(postStr, core::console::Color::White, endl.bgcolor) << "\n";
+	}
 	return stream;
 }
 
-std::ostream& operator<<(std::ostream& stream, const core::tab& _tab)
+// Console text: ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+core::console::Text::Text() :
+	str(),
+	fgcolor(Color::None),
+	bgcolor(Color::None)
 {
-	static const std::string tab(core::tab::size, ' ');
-	std::cout << core::ColoredStr(tab, core::Color::White, _tab.bgcolor);
+
+}
+
+core::console::Text::Text(std::string str, Color fgcolor /*= Color::None*/, Color bgcolor /*= Color::None*/) :
+	str(str),
+	fgcolor(fgcolor),
+	bgcolor(bgcolor)
+{
+
+}
+
+void core::console::Text::operator=(std::string str)
+{
+	this->str = str;
+}
+
+intern void coutText(const core::console::Text& text)
+{
+	int fgcolor = text.fgcolor == core::console::Color::None ? (int)core::console::fgcolor : (int)text.fgcolor;
+	int bgcolor = text.bgcolor == core::console::Color::None ? (int)core::console::bgcolor : (int)text.bgcolor;
+	SetConsoleTextAttribute(core::console::hOut, (WORD)(bgcolor * 16 + fgcolor));
+	std::cout << text.str;
+	// Reset color to default:
+	// There are 16 background colors and 16 foregroundcolors, which makes 256 variations (0..255).
+	SetConsoleTextAttribute(core::console::hOut, (WORD)((int)core::console::bgcolor * 16 + (int)core::console::fgcolor));
+}
+
+std::ostream& operator<<(std::ostream& stream, const core::console::Text& text)
+{
+	coutText(text);
 	return stream;
 }
 
-std::wostream& operator<<(std::wostream& stream, const core::tab& _tab)
+std::wostream& operator<<(std::wostream& stream, const core::console::Text& text)
 {
-	static const std::string tab(core::tab::size, ' ');
-	std::wcout << core::ColoredStr(tab, core::Color::White, _tab.bgcolor);
+	coutText(text);
 	return stream;
 }
 
@@ -332,7 +442,7 @@ intern COORD getScreenSize()
 	return COORD{ static_cast<short>(newScreenWidth), static_cast<short>(newscreenHeight) };
 }
 
-intern void setConsoleColor(core::Color bg, core::Color fg)
+intern void setConsoleColor(core::console::Color bg, core::console::Color fg)
 {
 	// Set color for whole console.
 	// SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 7) still works, but its default background color is black.

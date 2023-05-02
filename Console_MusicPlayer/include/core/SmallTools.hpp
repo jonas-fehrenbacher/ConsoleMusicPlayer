@@ -17,7 +17,7 @@ namespace core
 	{
 		// Search here: https://www.compart.com/en/unicode/U+2588
 		// Note unicode characters can be stored in an char by using u8"".
-		extern const char* fullBlock;
+		extern const char* fullBlock; // instead you can use ' ' and change the background color.
 		extern const char* infinity;
 		extern const char* latinSmallLetterOu; // shuffle
 		extern const char* copticCapitalLetterGangia; // shuffle
@@ -38,6 +38,26 @@ namespace core
 		extern const char* ballotBox;
 		extern const char* upwardsArrow;
 		extern const char* downwardsArrow;
+		extern const char* blackUpPointingTriangle;
+		extern const char* blackDownPointingTriangle;
+		extern const char* blackRightPointingTriangle;
+		// Box drawing:
+		extern const char* boxDrawingsLightHorizontal;
+		extern const char* boxDrawingsHeavyHorizontal;
+		extern const char* boxDrawingsLightVertical;
+		extern const char* boxDrawingsHeavyVertical;
+		extern const char* boxDrawingsLightDownAndRight;
+		extern const char* boxDrawingsHeavyDownAndRight;
+		extern const char* boxDrawingsLightDownAndLeft;
+		extern const char* boxDrawingsHeavyDownAndLeft;
+		extern const char* boxDrawingsLightUpAndRight;
+		extern const char* boxDrawingsHeavyUpAndRight;
+		extern const char* boxDrawingsLightUpAndLeft;
+		extern const char* boxDrawingsHeavyUpAndLeft;
+		extern const char* boxDrawingsLightArcDownAndRight;
+		extern const char* boxDrawingsLightArcDownAndLeft;
+		extern const char* boxDrawingsLightArcUpAndLeft;
+		extern const char* boxDrawingsLightArcUpAndRight;
 	}
 
 	void log(std::string message);
