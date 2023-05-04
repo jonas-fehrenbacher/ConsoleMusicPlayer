@@ -6,7 +6,6 @@
 #include "core/StateMachine.hpp"
 #include "core/MessageBus.hpp"
 #include "core/ScrollableList.hpp"
-#include "core/SmallMusicPlayer.hpp"
 
 class App
 {
@@ -22,13 +21,12 @@ public:
 	/** Use this to set different themes. */
 	struct Style
 	{
-		core::Color                   fgcolor; //< default color if nothing is specified
-		core::Color                   bgcolor; //< default color if nothing is specified
-		LoadingScreenStyle            loadingScreen;
-		core::ScrollableList::Style   scrollableList;
-		core::SmallMusicPlayer::Style smallMusicPlayer;
-		MenuState::Style              menu;
-		PlayState::Style              playState;
+		core::Color                 fgcolor; //< default color if nothing is specified
+		core::Color                 bgcolor; //< default color if nothing is specified
+		LoadingScreenStyle          loadingScreen;
+		core::ScrollableList::Style scrollableList;
+		MenuState::Style            menu;
+		PlayState::Style            playState;
 	};
 
 	core::MessageBus      messageBus;

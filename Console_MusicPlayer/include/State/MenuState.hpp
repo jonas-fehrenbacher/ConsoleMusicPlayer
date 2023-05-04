@@ -2,8 +2,8 @@
 
 #include "core/StateMachine.hpp"
 #include "core/ScrollableList.hpp"
-#include "core/SmallMusicPlayer.hpp"
 #include "core/MessageBus.hpp"
+#include "core/Playlist.hpp"
 #include <filesystem>
 #include <vector>
 #include <array>
@@ -47,6 +47,14 @@ private:
         Last = 2
     };
 
+    enum class Replay
+    {
+        None  = 0, // Loop deactivated
+        One   = 1, // Loop currently playing music
+        All   = 2, // Loop playlist - all music
+        Count = 3
+    };
+
     App*                       app;
     std::array<std::string, 3> options;
     Option                     selected; // this item is selected
@@ -54,15 +62,23 @@ private:
     core::ScrollableList       playlistList;
     core::ScrollableList       musicList;
     core::ScrollableList       directoryList;
-    core::SmallMusicPlayer     smallMusicPlayer;
     bool                       drawKeyInfo;
     Style                      style;
     bool                       firstInit;
 
+    core::Playlist playlist;
+    Replay         replay;
+    core::Text     skipReport;
+    core::Timer    cooldownSkipReport;
+    core::Text     volumeReport;
+    core::Timer    cooldownVolumeReport;
+
     void initMusicList();
     void initDirectories();
+    void initPlaylists();
     void onMessage(core::Message message);
-    bool isInsideOption();
-    bool isInsideOption(Option option);
-    int getMusicPlayerPosX();
+    bool isInsideNavBar();
+    /** return nullptr if no list is active. */
+    core::ScrollableList* getActiveList();
+    void handlePlaylistEvents();
 };

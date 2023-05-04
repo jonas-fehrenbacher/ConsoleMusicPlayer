@@ -59,10 +59,19 @@ void PlayState::init()
 
 	totalRunTimeClock.restart();
 
-	musicList.init((core::ScrollableList::Options)((int)core::ScrollableList::Options::DrawCentered | (int)core::ScrollableList::Options::SelectionMode), app->style.scrollableList, "playlist");
+	core::ScrollableList::InitInfo sliInfo;
+	sliInfo.options = (core::ScrollableList::Options)((int)core::ScrollableList::Options::DrawCentered | (int)core::ScrollableList::Options::SelectionMode);
+	sliInfo.style = app->style.scrollableList;
+	sliInfo.name = "playlist";
+	sliInfo.columnLayout = {};
+	sliInfo.spaceBetweenColumns = 3;
+	sliInfo.sizeInside = { 60, 18 };
+	sliInfo.hover = 0;
+	musicList.init(sliInfo);
 	for (int i = 0; i < playlist.size(); ++i) {
-		musicList.push_back(playlist.at(i).title);
+		musicList.push_back({ playlist.at(i).title });
 	}
+	musicList.onConsoleResize();
 
 	firstInit = false;
 }
@@ -320,7 +329,7 @@ void PlayState::draw()
 		skipReport.bgcolor = core::Color::White; // TODO set it in constructor
 		core::console::setBgColor(core::Color::White);
 
-		float progressBarFactor = playlist.getCurrentMusicElapsedTime().asSeconds() / playlist.getCurrentMusicDuration().asSeconds(); // 0..duration
+		float progressBarFactor = playlist.size() == 0 ? 0 : playlist.getCurrentMusicElapsedTime().asSeconds() / playlist.getCurrentMusicDuration().asSeconds(); // 0..duration
 		int progressBarSize = core::console::getCharCount().x * progressBarFactor; // 0..consoleCharCountX
 
 		std::string spaceBefore(drawPos, ' ');

@@ -41,7 +41,7 @@ App::App() :
 	std::wcout.imbue(utf8); // Required to output utf-8 paths.
 	SetConsoleOutputCP(CP_UTF8); // required
 	SetConsoleCP(CP_UTF8); // optional
-	//char* a = setlocale(LC_ALL, ".UTF8");
+	char* a = setlocale(LC_ALL, ".UTF8");
 	//SetConsoleOutputCP(437);
 	core::console::setFont(L"Consolas", 24); // Consolas, core::console::DEFAULT_UNICODE_FONTNAME
 	/* Good fonts:
@@ -154,23 +154,15 @@ App::Style getStyle()
 	style.scrollableList.selected            = core::Color::Green;
 	style.scrollableList.hover               = core::Color::Bright_White;
 	// style.menu:
-	style.menu.arrow     = core::Color::Gray;
-	style.menu.item      = core::Color::Black;
-	style.menu.selected  = core::Color::Bright_White;
-	style.menu.hover     = core::Color::Black;
-	style.menu.statusOn  = core::Color::Green;
-	style.menu.statusOff = core::Color::Gray;
-
+	style.menu.arrow                   = core::Color::Gray;
+	style.menu.item                    = core::Color::Black;
+	style.menu.selected                = core::Color::Bright_White;
+	style.menu.hover                   = core::Color::Black;
+	style.menu.statusOn                = core::Color::Green;
+	style.menu.statusOff               = core::Color::Gray;
 	style.menu.durationProgressBar     = core::Color::White;
 	style.menu.durationProgressBarText = core::Color::Black;
 	style.menu.durationText            = core::Color::Black;
-	// style.smallMusicPlayer
-	style.smallMusicPlayer.title     = core::Color::Gray;
-	style.smallMusicPlayer.duration  = core::Color::White;
-	style.smallMusicPlayer.status    = core::Color::White;
-	style.smallMusicPlayer.statusOn  = core::Color::Green;
-	style.smallMusicPlayer.statusOff = core::Color::Red;
-	style.smallMusicPlayer.border    = core::Color::Gray;
 	// style.playState
 	style.playState.durationProgressBar     = core::Color::Light_Purple;
 	style.playState.durationProgressBarText = core::Color::Bright_White;
@@ -313,7 +305,8 @@ void App::mainLoop()
 		// maybe update musicDirs (optional)
 		core::inputDevice::update();
 
-		if (drawTimer.getElapsedTime() >= 100ms) {
+		if (drawTimer.getElapsedTime() >= 250ms) {
+			// The more you draw, the less frequent handleEvent is called and it happens that keys are missed (maybe use somehow SDL...)
 			core::console::clearScreen();
 			stateMachine.draw();
 			drawTimer.restart();

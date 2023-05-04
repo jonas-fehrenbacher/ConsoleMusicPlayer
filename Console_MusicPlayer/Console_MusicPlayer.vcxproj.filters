@@ -64,9 +64,6 @@
     <ClInclude Include="include\core\ScrollableList.hpp">
       <Filter>Headerdateien\core</Filter>
     </ClInclude>
-    <ClInclude Include="include\core\SmallMusicPlayer.hpp">
-      <Filter>Headerdateien\core</Filter>
-    </ClInclude>
     <ClInclude Include="include\State\MenuState.hpp">
       <Filter>Headerdateien\State</Filter>
     </ClInclude>
@@ -94,9 +91,6 @@
       <Filter>Quelldateien\core</Filter>
     </ClCompile>
     <ClCompile Include="source\core\ScrollableList.cpp">
-      <Filter>Quelldateien\core</Filter>
-    </ClCompile>
-    <ClCompile Include="source\core\SmallMusicPlayer.cpp">
       <Filter>Quelldateien\core</Filter>
     </ClCompile>
     <ClCompile Include="source\core\StateMachine.cpp">

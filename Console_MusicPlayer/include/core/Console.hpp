@@ -83,6 +83,18 @@ namespace core::console
 		void operator= (std::string str);
 	};
 
+	class WText
+	{
+	public:
+		std::wstring str;
+		Color        fgcolor;
+		Color        bgcolor;
+
+		WText();
+		WText(std::wstring str, Color fgcolor = Color::None, Color bgColor = Color::None);
+		void operator= (std::wstring str);
+	};
+
 	void init();
 	void reset();
 	void clearScreen();
@@ -112,10 +124,13 @@ std::wostream& operator<<(std::wostream& stream, const core::console::endl& endl
 std::ostream& operator<<(std::ostream& stream, const core::console::tab& tab);
 std::wostream& operator<<(std::wostream& stream, const core::console::tab& tab);
 
-std::ostream& operator<<(std::ostream& stream, const core::console::Text& print);
-std::wostream& operator<<(std::wostream& stream, const core::console::Text& print);
+std::ostream& operator<<(std::ostream& stream, const core::console::Text& text);
+std::wostream& operator<<(std::wostream& stream, const core::console::Text& text);
 inline bool operator==(const core::console::Text& lhs, const std::string& rhs) { return lhs.str == rhs; }
 inline bool operator!=(const core::console::Text& lhs, const std::string& rhs) { return !operator==(lhs, rhs); }
+std::wostream& operator<<(std::wostream& stream, const core::console::WText& text);
+inline bool operator==(const core::console::WText& lhs, const std::string& rhs) { return lhs.str == rhs; }
+inline bool operator!=(const core::console::WText& lhs, const std::string& rhs) { return !operator==(lhs, rhs); }
 
 namespace core
 {
@@ -124,4 +139,5 @@ namespace core
 	using console::tab;
 	using console::endl;
 	using console::Text;
+	using console::WText;
 }

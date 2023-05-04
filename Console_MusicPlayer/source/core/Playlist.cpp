@@ -45,8 +45,8 @@ void core::Playlist::init(std::filesystem::path playlistPath, std::vector<fs::pa
 	}
 
 	name = playlistPath.filename().string();
-	std::string   filename;
-	std::ifstream ifs(playlistPath, std::ios::in);
+	std::wstring   filename;
+	std::wifstream ifs(playlistPath, std::ios::in);
 
 	while (std::getline(ifs, filename)) {
 		// Playlist should only hold filenames, so that music files can be moved without editing the playlist file.

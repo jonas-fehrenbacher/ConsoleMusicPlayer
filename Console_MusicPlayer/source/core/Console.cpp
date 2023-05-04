@@ -429,6 +429,41 @@ std::wostream& operator<<(std::wostream& stream, const core::console::Text& text
 	return stream;
 }
 
+// Console wide text: //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+core::console::WText::WText() :
+	str(),
+	fgcolor(Color::None),
+	bgcolor(Color::None)
+{
+
+}
+
+core::console::WText::WText(std::wstring str, Color fgcolor /*= Color::None*/, Color bgcolor /*= Color::None*/) :
+	str(str),
+	fgcolor(fgcolor),
+	bgcolor(bgcolor)
+{
+
+}
+
+void core::console::WText::operator=(std::wstring str)
+{
+	this->str = str;
+}
+
+std::wostream& operator<<(std::wostream& stream, const core::console::WText& text)
+{
+	int fgcolor = text.fgcolor == core::console::Color::None ? (int)core::console::fgcolor : (int)text.fgcolor;
+	int bgcolor = text.bgcolor == core::console::Color::None ? (int)core::console::bgcolor : (int)text.bgcolor;
+	SetConsoleTextAttribute(core::console::hOut, (WORD)(bgcolor * 16 + fgcolor));
+	std::wcout << text.str;
+	// Reset color to default:
+	// There are 16 background colors and 16 foregroundcolors, which makes 256 variations (0..255).
+	SetConsoleTextAttribute(core::console::hOut, (WORD)((int)core::console::bgcolor * 16 + (int)core::console::fgcolor));
+	return stream;
+}
+
 // Maybe useful: ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 intern COORD getScreenSize()

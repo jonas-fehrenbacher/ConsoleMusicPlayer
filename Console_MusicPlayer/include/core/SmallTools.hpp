@@ -13,6 +13,8 @@ using namespace std::chrono_literals;
 namespace core
 {
 	// unicode characters:
+	// Important: std::string can not handle unicode characters properly, so be aware of the following: 
+	// std::string(u8"\u25BA").length() == 3; std::wstring(L"\u25BA").length() == 1
 	namespace uc
 	{
 		// Search here: https://www.compart.com/en/unicode/U+2588
@@ -61,12 +63,19 @@ namespace core
 	}
 
 	void log(std::string message);
+	std::wstring toWStr(std::string str);
+	std::string toStr(std::wstring wstr);
 	/* Set flags in binary notation. 0 for not set and 1 for set. */
 	std::string getUsername();
 	long long getUUID();
 	/* Convert core::Time to an string (3min -> "3:00") */
 	std::string getTimeStr(core::Time time, core::Time limit = 0ns);
+	/** utf8 strings can not return the real length, but this function helps with that. */
+	size_t getStrLength(const std::string& utf8);
+	size_t getUniCodeCharCount(const std::string& utf8);
+	size_t getUniCodeCharCount(const std::wstring& utf8);
 	bool isSupportedAudioFile(fs::path filepath);
+	bool isAudioFile(fs::path filepath);
 	bool hasFlag(int flag, int flagList);
 
 	void setConfig(std::filesystem::path path, const std::map<std::wstring, std::wstring>& config);

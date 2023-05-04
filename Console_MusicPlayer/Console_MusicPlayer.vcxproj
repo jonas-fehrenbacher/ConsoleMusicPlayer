@@ -152,7 +152,6 @@
     <ClInclude Include="include\core\MessageBus.hpp" />
     <ClInclude Include="include\core\Playlist.hpp" />
     <ClInclude Include="include\core\ScrollableList.hpp" />
-    <ClInclude Include="include\core\SmallMusicPlayer.hpp" />
     <ClInclude Include="include\core\SmallTools.hpp" />
     <ClInclude Include="include\core\StateMachine.hpp" />
     <ClInclude Include="include\core\Time.hpp" />
@@ -169,7 +168,6 @@
     <ClCompile Include="source\core\MessageBus.cpp" />
     <ClCompile Include="source\core\Playlist.cpp" />
     <ClCompile Include="source\core\ScrollableList.cpp" />
-    <ClCompile Include="source\core\SmallMusicPlayer.cpp" />
     <ClCompile Include="source\core\SmallTools.cpp" />
     <ClCompile Include="source\core\StateMachine.cpp" />
     <ClCompile Include="source\core\Time.cpp" />
