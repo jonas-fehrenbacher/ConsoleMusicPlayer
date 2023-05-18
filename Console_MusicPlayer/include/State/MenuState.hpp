@@ -3,7 +3,9 @@
 #include "core/StateMachine.hpp"
 #include "core/ScrollableList.hpp"
 #include "core/MessageBus.hpp"
-#include "core/Playlist.hpp"
+#include "core/MusicPlayer.hpp"
+#include "State/PlaylistState.hpp"
+#include "State/DirectoryState.hpp"
 #include <filesystem>
 #include <vector>
 #include <array>
@@ -47,38 +49,19 @@ private:
         Last = 2
     };
 
-    enum class Replay
-    {
-        None  = 0, // Loop deactivated
-        One   = 1, // Loop currently playing music
-        All   = 2, // Loop playlist - all music
-        Count = 3
-    };
-
     App*                       app;
     std::array<std::string, 3> options;
     Option                     selected; // this item is selected
     Option                     hover; // over this item do we hover
-    core::ScrollableList       playlistList;
-    core::ScrollableList       musicList;
-    core::ScrollableList       directoryList;
     bool                       drawKeyInfo;
     Style                      style;
     bool                       firstInit;
+    PlaylistState              playlistState;
+    DirectoryState             directoryState;
+    core::MusicPlayer          musicPlayer;
+    
+    core::Time     playbackDuration;
 
-    core::Playlist playlist;
-    Replay         replay;
-    core::Text     skipReport;
-    core::Timer    cooldownSkipReport;
-    core::Text     volumeReport;
-    core::Timer    cooldownVolumeReport;
-
-    void initMusicList();
-    void initDirectories();
-    void initPlaylists();
     void onMessage(core::Message message);
     bool isInsideNavBar();
-    /** return nullptr if no list is active. */
-    core::ScrollableList* getActiveList();
-    void handlePlaylistEvents();
 };

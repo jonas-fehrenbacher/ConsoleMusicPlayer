@@ -58,19 +58,10 @@
     <ClInclude Include="include\core\MessageBus.hpp">
       <Filter>Headerdateien\core</Filter>
     </ClInclude>
-    <ClInclude Include="include\core\Playlist.hpp">
-      <Filter>Headerdateien\core</Filter>
-    </ClInclude>
     <ClInclude Include="include\core\ScrollableList.hpp">
       <Filter>Headerdateien\core</Filter>
     </ClInclude>
     <ClInclude Include="include\State\MenuState.hpp">
-      <Filter>Headerdateien\State</Filter>
-    </ClInclude>
-    <ClInclude Include="include\State\PlaylistEditorState.hpp">
-      <Filter>Headerdateien\State</Filter>
-    </ClInclude>
-    <ClInclude Include="include\State\PlayState.hpp">
       <Filter>Headerdateien\State</Filter>
     </ClInclude>
     <ClInclude Include="include\App.hpp">
@@ -82,12 +73,21 @@
     <ClInclude Include="include\core\SmallTools.hpp">
       <Filter>Headerdateien\core</Filter>
     </ClInclude>
+    <ClInclude Include="include\core\Profiler.hpp">
+      <Filter>Headerdateien\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\State\PlaylistState.hpp">
+      <Filter>Headerdateien\State</Filter>
+    </ClInclude>
+    <ClInclude Include="include\State\DirectoryState.hpp">
+      <Filter>Headerdateien\State</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core\MusicPlayer.hpp">
+      <Filter>Headerdateien\core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\core\MessageBus.cpp">
-      <Filter>Quelldateien\core</Filter>
-    </ClCompile>
-    <ClCompile Include="source\core\Playlist.cpp">
       <Filter>Quelldateien\core</Filter>
     </ClCompile>
     <ClCompile Include="source\core\ScrollableList.cpp">
@@ -108,12 +108,6 @@
     <ClCompile Include="source\core\InputDevice.cpp">
       <Filter>Quelldateien\core</Filter>
     </ClCompile>
-    <ClCompile Include="source\State\PlaylistEditorState.cpp">
-      <Filter>Quelldateien\State</Filter>
-    </ClCompile>
-    <ClCompile Include="source\State\PlayState.cpp">
-      <Filter>Quelldateien\State</Filter>
-    </ClCompile>
     <ClCompile Include="source\State\MenuState.cpp">
       <Filter>Quelldateien\State</Filter>
     </ClCompile>
@@ -124,6 +118,18 @@
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="source\core\SmallTools.cpp">
+      <Filter>Quelldateien\core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\core\Profiler.cpp">
+      <Filter>Quelldateien\core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\State\PlaylistState.cpp">
+      <Filter>Quelldateien\State</Filter>
+    </ClCompile>
+    <ClCompile Include="source\State\DirectoryState.cpp">
+      <Filter>Quelldateien\State</Filter>
+    </ClCompile>
+    <ClCompile Include="source\core\MusicPlayer.cpp">
       <Filter>Quelldateien\core</Filter>
     </ClCompile>
   </ItemGroup>

@@ -10,6 +10,7 @@
 #include <Windows.h>
 #include <iostream>
 #include <filesystem>
+#include <cassert>
 
 enum Column
 {
@@ -18,20 +19,12 @@ enum Column
 
 MenuState::MenuState(App* app) :
 	app(app),
-	playlistList(),
 	options( { "Tracks", "Playlists", "Directories" }),
 	selected(Option::AllMusic),
 	hover(Option::None),
 	drawKeyInfo(true),
 	firstInit(true),
-	style(),
-
-	playlist(),
-	volumeReport(),
-	cooldownVolumeReport(),
-	skipReport(),
-	cooldownSkipReport(),
-	replay(Replay::None)
+	style()
 {
 	
 }
@@ -46,70 +39,40 @@ void MenuState::init()
 		// receive messages, so I check for 'firstInit'.
 	}
 
-	style = app->style.menu;
-
-	playlist.init(app->musicDirs, core::Playlist::FadeOut);
-
-	// Set selected:
+	///////////////////////////////////////////////////////////////////////////////
+	// Get config
+	///////////////////////////////////////////////////////////////////////////////
 	// Do not do this in the constructor, because in App::App I need to check if the directory exists.
 	std::map<std::wstring, std::wstring> config = core::getConfig("data/config.dat");
 	if (config.count(L"defaultPlaylist") == 0) {
 		core::log("Error: defaultPlaylist not found in config.dat");
 		__debugbreak();
 	}
-	size_t selectedPlaylist = std::stoi(config[L"defaultPlaylist"]);
-	core::ScrollableList::Options scrollListFlags = (core::ScrollableList::Options)(
-		(int)core::ScrollableList::SelectionMode | 
-		//(int)core::ScrollableList::ArrowInput | // I need this keys for changing the track
-		(int)core::ScrollableList::DrawFullX); // When this is set then use ScrollableList::getPosX()
 
-	// Init lists:
-	std::vector<core::ScrollableList::Column> trackList_columnLayout;
-	{
-		core::ScrollableList::Column column;
-		column.length            = core::ScrollableList::Column::LARGEST_ITEM;
-		column.color             = core::Color::Gray;
-		column.hasEmptySpace     = false;
-		column.isLengthInPercent = false;
-		trackList_columnLayout.push_back(column);
-		column.length            = 0;
-		column.color             = core::Color::Bright_White;
-		column.hasEmptySpace     = true;
-		column.isLengthInPercent = false;
-		trackList_columnLayout.push_back(column);
-		column.length            = core::ScrollableList::Column::LARGEST_ITEM;
-		column.color             = core::Color::Aqua;
-		column.hasEmptySpace     = false;
-		column.isLengthInPercent = false;
-		trackList_columnLayout.push_back(column);
+	///////////////////////////////////////////////////////////////////////////////
+	// Init music player
+	///////////////////////////////////////////////////////////////////////////////
+	core::Time musicPlayer_sleepTime = 0s;
+	if (config[L"totalRuntime"] != L"nolimit") {
+		musicPlayer_sleepTime = core::Seconds(std::stoi(config[L"totalRuntime"]));
 	}
-	core::ScrollableList::InitInfo sliInfo;
-	sliInfo.options = scrollListFlags;
-	sliInfo.style = app->style.scrollableList;
-	sliInfo.name = "tracks";
-	sliInfo.columnLayout = trackList_columnLayout;
-	sliInfo.spaceBetweenColumns = 3;
-	sliInfo.sizeInside = { 60, 20 };
-	sliInfo.hover = 0;
-	musicList.init(sliInfo);
-	sliInfo.name         = "playlists";
-	sliInfo.columnLayout = {};
-	sliInfo.hover        = selectedPlaylist;
-	playlistList.init(sliInfo);
-	sliInfo.name         = "directories";
-	sliInfo.columnLayout = {};
-	sliInfo.hover        = 0;
-	directoryList.init(sliInfo);
-
-	initMusicList();
-	initDirectories();
-	initPlaylists();
+	int musicPlayer_options =
+		(config[L"isPlaylistShuffled"] == L"true" ? core::MusicPlayer::Shuffle : 0) |
+		(config[L"playlistLoop"] == L"none" ? 0 : (config[L"playlistLoop"] == L"one" ? core::MusicPlayer::LoopOne : core::MusicPlayer::LoopAll)) |
+		core::MusicPlayer::FadeOut;
+	musicPlayer.init(app->musicDirs, app->style.scrollableList, musicPlayer_options, musicPlayer_sleepTime);
 
 	firstInit = false;
+	style = app->style.menu;
+
+	playlistState.init(app, &musicPlayer);
+	directoryState.init(app);
 }
 
-void MenuState::initMusicList()
+// deprecated:
+void initMusicList()
 {
+#if 0
 	// Takes a lot of time when it has to load many music files (>300)
 
 	for (auto& musicDir : app->musicDirs) {
@@ -146,162 +109,114 @@ void MenuState::initMusicList()
 
 	// Calculate everything new (important):
 	musicList.onConsoleResize();
-}
-
-void MenuState::initDirectories()
-{
-	for (auto& musicDir : app->musicDirs) {
-		directoryList.push_back({ musicDir.u8string() });
-	}
-
-	// Calculate everything new (important):
-	directoryList.onConsoleResize();
-}
-
-void MenuState::initPlaylists()
-{
-	playlistList.push_back({ "all" }); // virtual playlist (plays all music)
-	for (auto& it : fs::directory_iterator("data")) {
-		if (it.is_regular_file() && it.path().extension() == ".pl") {
-			playlistList.push_back({ it.path().stem().string() });
-		}
-	}
-
-	// Calculate everything new (important):
-	playlistList.onConsoleResize();
+#endif
 }
 
 void MenuState::terminate()
 {
 	// Well, I need the selected playlist in PlayState..
-	musicList.terminate();
-	playlistList.terminate();
-	directoryList.terminate();
-	playlist.terminate();
+	playlistState.terminate();
+	directoryState.terminate();
+	musicPlayer.terminate();
 }
 
 void MenuState::update()
 {
 	///////////////////////////////////////////////////////////////////////////////
-	// Search for playlists
+	// Update state
 	///////////////////////////////////////////////////////////////////////////////
-	// I'm doing this regularly, so that user can add playlists while program is running.
-	if (selected == Option::Playlists) {
-		// ...playlist option is selected, but we must not be inside of it.
-		playlistList.clear();
-		playlistList.push_back({ "all" }); // virtual playlist (plays all music)
-		for (auto& it : fs::directory_iterator("data")) {
-			if (it.is_regular_file() && it.path().extension() == ".pl") {
-				playlistList.push_back({ it.path().stem().string() });
-			}
-		}
+	if (selected == Option::AllMusic) {
+		
+	}
+	else if (selected == Option::Playlists) {
+		playlistState.update();
+	}
+	else if (selected == Option::Directories) {
+		directoryState.update();
 	}
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Scrollable lists breakout to navigation bar
 	///////////////////////////////////////////////////////////////////////////////
-	core::ScrollableList* activeList = getActiveList();
-	if (activeList) {
-		// ..there is a active list
-		activeList->update();
-		if (!isInsideNavBar() && activeList->isTrappedOnTop()) {
-			// ...user wants to scroll out of the list.
+	if (!isInsideNavBar())
+	{
+		bool isTrappedOnTop = false;
+		if (selected == Option::AllMusic && musicPlayer.isTrappedOnTop()) {
+			isTrappedOnTop = true;
+			musicPlayer.stopDrawableListEvents();
+		}
+		else if (selected == Option::Playlists && playlistState.isTrappedOnTop()) {
+			isTrappedOnTop = true;
+			playlistState.loseFocus();
+		}
+		else if (selected == Option::Directories && directoryState.isTrappedOnTop()) {
+			isTrappedOnTop = true;
+			directoryState.loseFocus();
+		}
+		if (isTrappedOnTop) {
 			hover = Option::Last; // we leave list, but it is still rendered.
-			activeList->loseFocus();
 		}
 	}
 
-	///////////////////////////////////////////////////////////////////////////////
-	// Sync auto play with music list
-	///////////////////////////////////////////////////////////////////////////////
-	if (!playlist.isCurrentMusicStopped()) {
-		// ..small music player is running
-		musicList.select(playlist.getCurrentMusicIndex());
-	}
-
-	///////////////////////////////////////////////////////////////////////////////
-	// Update list border color
-	///////////////////////////////////////////////////////////////////////////////
-	std::vector<core::ScrollableList*> lists{ &musicList, &playlistList, &directoryList };
-	for (auto list : lists) {
-		if (playlist.isCurrentMusicStopped()) {
-			list->style.border = core::Color::Light_Red;
-		}
-		else if (playlist.isPaused()) {
-			list->style.border = core::Color::Light_Aqua;
-		}
-		else if (playlist.isPlaying()) {
-			list->style.border = core::Color::Light_Green;
-		}
-	}
-
-	playlist.update();
-
-	///////////////////////////////////////////////////////////////////////////////
-	// Update draw info
-	///////////////////////////////////////////////////////////////////////////////
-	//volume report:
-	if (cooldownVolumeReport.getElapsedTime().asSeconds() > 0.5f && volumeReport != "")
-	{
-		volumeReport = core::Text();
-		cooldownVolumeReport.restart();
-	}
-	//skip report:
-	if (cooldownSkipReport.getElapsedTime().asSeconds() > 0.5f && skipReport != "")
-	{
-		skipReport = core::Text();
-		cooldownSkipReport.restart();
-	}
+	musicPlayer.update();
 }
 
 void MenuState::handleEvent()
 {
-	if (core::inputDevice::isKeyPressed(VK_RETURN)) 
-	{
-		if (isInsideNavBar()) 
-		{
-			selected = hover;
-			// Jump into the option:
-			hover = Option::None;
-			core::ScrollableList* activeList = getActiveList();
-			activeList->gainFocus();
-			activeList->scrollToTop();
-		}
-		else if (selected == Option::AllMusic) {
-			musicList.selectHoveredItem();
-			playlist.start(musicList.getSelectedIndex());
-		}
-		else if (selected == Option::Playlists) {
-			playlistList.selectHoveredItem();
-			// Play playlist:
-			std::string* userData = new std::string("data/" + playlistList.getSelected()[COLUMN_NAME] + ".pl");
-			app->messageBus.send(Message::MenuState_EnteredPlaylist, userData);
-			// Update config:
-			std::map<std::wstring, std::wstring> config = core::getConfig("data/config.dat");
-			config[L"defaultPlaylist"] = std::to_wstring(playlistList.getSelectedIndex());
-			core::setConfig("data/config.dat", config);
-		}
-		else if (selected == Option::Directories) {
-			directoryList.selectHoveredItem();
-		}
-		else __debugbreak();
-	}
+	musicPlayer.handleEvents();
 
+	///////////////////////////////////////////////////////////////////////////////
+	// Lock
+	///////////////////////////////////////////////////////////////////////////////
 	if (core::inputDevice::isKeyPressed(VK_F12, true)) {
 		core::inputDevice::lock(!core::inputDevice::isLocked());
 	}
 
+	///////////////////////////////////////////////////////////////////////////////
+	// Hide key
+	///////////////////////////////////////////////////////////////////////////////
 	if (core::inputDevice::isKeyPressed('K')) {
 		drawKeyInfo = !drawKeyInfo;
+		playlistState.setDrawKeyInfo(drawKeyInfo);
 	}
 
+	///////////////////////////////////////////////////////////////////////////////
+	// Jump to navigation bar
+	///////////////////////////////////////////////////////////////////////////////
 	if (core::inputDevice::isKeyPressed('O')) {
 		hover = Option::First;
-		if (selected == Option::Playlists) playlistList.loseFocus();
-		else if (selected == Option::AllMusic) musicList.loseFocus();
-		else if (selected == Option::Directories) directoryList.loseFocus();
+		if (selected == Option::Playlists) playlistState.loseFocus();
+		else if (selected == Option::AllMusic) musicPlayer.stopDrawableListEvents();
+		else if (selected == Option::Directories) directoryState.loseFocus();
 	}
 
+	///////////////////////////////////////////////////////////////////////////////
+	// Navigation bar slection
+	///////////////////////////////////////////////////////////////////////////////
+	if (isInsideNavBar() && core::inputDevice::isKeyPressed(VK_RETURN))
+	{
+		selected = hover;
+		// Jump into the option:
+		hover = Option::None;
+
+		if (selected == Option::AllMusic) {
+			musicPlayer.resumeDrawableListEvents();
+			musicPlayer.scrollDrawableListToTop();
+			musicPlayer.setDrawnPlaylist(core::MusicPlayer::ALL_PLAYLIST_NAME);
+		}
+		else if (selected == Option::Playlists) {
+			playlistState.start();
+		}
+		else if (selected == Option::Directories) {
+			directoryState.update();
+			directoryState.gainFocus();
+			directoryState.scrollToTop();
+		}
+	}
+
+	///////////////////////////////////////////////////////////////////////////////
+	// Navigation bar selection movement
+	///////////////////////////////////////////////////////////////////////////////
 	if (isInsideNavBar())
 	{
 		// ..we are in the option selection
@@ -329,9 +244,9 @@ void MenuState::handleEvent()
 				{
 					// Jump into the option:
 					hover = Option::None;
-					if (selected == Option::AllMusic) musicList.gainFocus();
-					else if (selected == Option::Playlists) playlistList.gainFocus();
-					else if (selected == Option::Directories) directoryList.gainFocus();
+					if (selected == Option::AllMusic) musicPlayer.resumeDrawableListEvents();
+					else if (selected == Option::Playlists) playlistState.gainFocus();
+					else if (selected == Option::Directories) directoryState.gainFocus();
 				}
 				else hover = Option::First;
 			}
@@ -344,167 +259,27 @@ void MenuState::handleEvent()
 			}
 			else moveDown();
 		}
-		if (core::inputDevice::isKeyPressed(VK_UP)) {
-			moveUp();
-		}
-		if (core::inputDevice::isKeyPressed(VK_DOWN)) {
-			moveDown();
-		}
+		// up / down keys are reserved for music player:
+		//if (core::inputDevice::isKeyPressed(VK_UP)) {
+		//	moveUp();
+		//}
+		//if (core::inputDevice::isKeyPressed(VK_DOWN)) {
+		//	moveDown();
+		//}
 	}
-	else if (selected == Option::AllMusic) {
-		musicList.handleEvent();
+
+	///////////////////////////////////////////////////////////////////////////////
+	// Handle state events
+	///////////////////////////////////////////////////////////////////////////////
+	if (selected == Option::AllMusic) {
+		
 	}
 	else if (selected == Option::Playlists) {
-		playlistList.handleEvent();
+		playlistState.handleEvent();
 	}
 	else if (selected == Option::Directories) {
-		directoryList.handleEvent();
+		directoryState.handleEvent();
 	}
-
-	handlePlaylistEvents();
-}
-
-void MenuState::handlePlaylistEvents()
-{
-	using namespace core;
-
-	// Up / Down key (or music finished):
-	if (!playlist.isCurrentMusicStopped()) {
-		if (inputDevice::isKeyPressed(VK_UP)) {
-			playlist.playNext();
-		}
-		else if (inputDevice::isKeyPressed(VK_DOWN)) {
-			playlist.playPrevious();
-		}
-	}
-
-	// R-Key
-	if (inputDevice::isKeyPressed('R')) {
-		if (playlist.isShuffled()) playlist.resetShuffle();
-		else playlist.shuffle();
-	}
-
-	// L-Key:
-	if (inputDevice::isKeyPressed('L')) { // Loop key
-		// ..select one of 3 modi
-		replay = static_cast<Replay>((int)replay + 1);
-		replay = static_cast<Replay>((int)replay % (int)Replay::Count); // wrap around
-
-		if (replay == Replay::None) {
-			playlist.setLoop(false);
-			playlist.setCurrentMusicLoop(false);
-		}
-		if (replay == Replay::One) {
-			playlist.setLoop(false);
-			playlist.setCurrentMusicLoop(true);
-		}
-		if (replay == Replay::All) {
-			playlist.setLoop(true);
-			playlist.setCurrentMusicLoop(false);
-		}
-	}
-
-	// Left-Key:
-	if (!playlist.isCurrentMusicStopped() && inputDevice::isKeyPressed(VK_LEFT))
-	{
-		if (playlist.getCurrentMusicElapsedTime().asSeconds() < 5.f)
-		{
-			std::string skippedTimeText = std::to_string(playlist.getCurrentMusicElapsedTime().asSeconds());
-			skipReport = core::Text(" -" + skippedTimeText.substr(0, skippedTimeText.find(".") + 3) + "sec", core::Color::Light_Red);
-			if (playlist.getCurrentMusicLoop()) playlist.skipTime(core::Time(-5s)); // will be 0
-			else playlist.playPrevious();
-		}
-		else
-		{
-			skipReport = core::Text(" -5sec", core::Color::Light_Red);
-			playlist.skipTime(core::Time(-5s));
-		}
-
-		cooldownSkipReport.restart();
-	}
-
-	// Right-Key:
-	if (!playlist.isCurrentMusicStopped() && inputDevice::isKeyPressed(VK_RIGHT))
-	{
-		if (playlist.getCurrentMusicElapsedTime().asSeconds() > playlist.getCurrentMusicDuration().asSeconds() - 5.f)
-		{
-			// ..there are no 5sec remaining
-			core::Time skippedTime = playlist.getCurrentMusicDuration() - playlist.getCurrentMusicElapsedTime();
-			std::string skippedTimeText = std::to_string(skippedTime.asSeconds());
-			skipReport = core::Text(" +" + skippedTimeText.substr(0, skippedTimeText.find(".") + 3) + "sec", core::Color::Light_Green);
-			if (playlist.getCurrentMusicLoop()) playlist.skipTime(skippedTime); // Set music to the end, so it loops immediately.
-			else playlist.playNext();
-		}
-		else
-		{
-			skipReport = core::Text(" +5sec", core::Color::Light_Green);
-			playlist.skipTime(core::Time(5s));
-		}
-
-		cooldownSkipReport.restart();
-	}
-
-	// +-Key:
-	if (inputDevice::isKeyPressed(VK_OEM_PLUS))
-	{
-		if (playlist.getVolume() <= 95)
-		{
-			volumeReport = core::Text("+5%", core::Color::Light_Green);
-			playlist.setVolume(playlist.getVolume() + 5);
-		}
-		else
-		{
-			volumeReport = core::Text("+" + std::to_string(100 - static_cast<unsigned short>(playlist.getVolume())) + "%", core::Color::Light_Green);
-			playlist.setVolume(100);
-		}
-
-		cooldownVolumeReport.restart();
-	}
-
-	// --Key:
-	if (inputDevice::isKeyPressed(VK_OEM_MINUS))
-	{
-		if (playlist.getVolume() >= 5)
-		{
-			volumeReport = core::Text("-5%", core::Color::Light_Red);
-			playlist.setVolume(playlist.getVolume() - 5);
-		}
-		else
-		{
-			volumeReport = core::Text("-" + std::to_string(static_cast<unsigned short>(playlist.getVolume())) + "%", core::Color::Light_Red);
-			playlist.setVolume(0);
-		}
-
-		cooldownVolumeReport.restart();
-	}
-
-	// P-Key:
-	if (!playlist.isCurrentMusicStopped() && inputDevice::isKeyPressed('P'))
-	{
-		if (playlist.isPlaying())
-		{
-			playlist.pause();
-		}
-		else if (playlist.isPaused())
-		{
-			playlist.resume();
-		}
-	}
-}
-
-core::ScrollableList* MenuState::getActiveList()
-{
-	core::ScrollableList* activeList = nullptr;
-	if (selected == Option::Playlists) {
-		activeList = &playlistList;
-	}
-	else if (selected == Option::AllMusic) {
-		activeList = &musicList;
-	}
-	else if (selected == Option::Directories) {
-		activeList = &directoryList;
-	}
-	return activeList;
 }
 
 intern void coutWithProgressBar(int& progressBarSize, std::string text, core::Color textColor, core::Color progressBarTextColor, core::Color progressBarColor)
@@ -525,9 +300,9 @@ void MenuState::draw()
 	// Exit info:
 	std::string exitInfo = drawKeyInfo ? " <[ESC]"s : " <"; // If you use core::uc::leftwardsArrow, then note that std::string cannot properly handle unicode and its length is wrong.
 	// List status:
-	std::string trackNum = playlist.size() > 0 ? std::to_string(playlist.getCurrentMusicNumber()) : "-";
-	//if (playlist.getCurrentMusicNumber() > playlist.size()) trackNum = std::to_string(playlist.size());
-	trackNum += " / " + (playlist.size() > 0 ? std::to_string(playlist.size()) : "-");
+	std::string trackNum = musicPlayer.getActivePlaylistSize() > 0 ? std::to_string(musicPlayer.getActivePlaylistCurrentTrackNumber()) : "-";
+	//if (musicPlayer.getActivePlaylistCurrentTrackNumber() > musicPlayer.getActivePlaylistSize()) trackNum = std::to_string(musicPlayer.getActivePlaylistSize());
+	trackNum += " / " + (musicPlayer.getActivePlaylistSize() > 0 ? std::to_string(musicPlayer.getActivePlaylistSize()) : "-");
 	// skip key info:
 	std::string skipForwardKeyInfo = drawKeyInfo ? "["s + core::uc::downwardsArrow + "] " : "";
 	std::string skipBackwardKeyInfo = drawKeyInfo ? " ["s + core::uc::upwardsArrow + "]" : "";
@@ -538,7 +313,7 @@ void MenuState::draw()
 	// Draw:
 	core::console::setBgColor(core::Color::Bright_White);
 	std::cout << core::Text(exitInfo, core::Color::White);
-	if (!playlist.isCurrentMusicStopped()) {
+	if (!musicPlayer.isStopped()) {
 		// ..draw track number if music is playing.
 		std::cout << core::Text(std::string(trackNumberDrawPos, ' '))
 			<< core::Text(skipForwardKeyInfo, core::Color::White)
@@ -558,11 +333,11 @@ void MenuState::draw()
 	///////////////////////////////////////////////////////////////////////////////
 	// Draw track or title of the header
 	///////////////////////////////////////////////////////////////////////////////
-	if (!playlist.isCurrentMusicStopped()) {
+	if (!musicPlayer.isStopped()) {
 		// Track name:
 		const int maxNameSize = core::console::getCharCount().x - 4; // -4 because I want some padding
-		std::string trackName = playlist.current().title.substr(0, maxNameSize);
-		if (trackName.length() < playlist.current().title.length()) {
+		std::string trackName = musicPlayer.getPlayingMusicInfo().title.substr(0, maxNameSize);
+		if (trackName.length() < musicPlayer.getPlayingMusicInfo().title.length()) {
 			trackName.replace(trackName.end() - 2, trackName.end(), "..");
 		}
 		drawPos = core::console::getCharCount().x / 2.f - trackName.length() / 2.f;
@@ -628,13 +403,13 @@ void MenuState::draw()
 	core::console::setBgColor(app->style.bgcolor);
 	std::cout << core::endl();
 	if (selected == Option::AllMusic) {
-		musicList.draw();
+		musicPlayer.draw();
 	}
 	else if (selected == Option::Playlists) {
-		playlistList.draw();
+		playlistState.draw();
 	}
 	else if (selected == Option::Directories) {
-		directoryList.draw();
+		directoryState.draw();
 	}
 
 	///////////////////////////////////////////////////////////////////////////////
@@ -648,45 +423,56 @@ void MenuState::draw()
 
 		// playback:
 		core::Text playbackStatus = core::Text(" playback is stopped", style.statusOff);
-		if (playlist.isPlaying()) playbackStatus = core::Text(" playing", style.statusOn);
-		else if (playlist.isPaused()) playbackStatus = core::Text(" paused", core::Color::Aqua);
+		if (musicPlayer.isPlaying()) playbackStatus = core::Text(" playing", style.statusOn);
+		else if (musicPlayer.isPaused()) playbackStatus = core::Text(" paused", core::Color::Aqua);
 		core::Text playbackKey = core::Text(drawKeyInfo ? " [p]" : "", core::Color::Gray);
 		// shuffle:
-		core::Text shuffleStatus = core::Text("shuffle ", playlist.isShuffled() ? style.statusOn : style.statusOff);
+		core::Text shuffleStatus = core::Text("shuffle ", musicPlayer.isShuffled() ? style.statusOn : style.statusOff);
 		core::Text shuffleKey = core::Text(drawKeyInfo ? "[r] " : "", core::Color::Gray);
 		int shufflePos = core::console::getCharCount().x - (playbackStatus.str.length() + shuffleStatus.str.length() + playbackKey.str.length() + shuffleKey.str.length());
 		// volume:
-		core::Text volume = core::Text(" vol "s + std::to_string((int)playlist.getVolume()) + "%", core::Color::White);
+		core::Text volume = core::Text(" vol "s + std::to_string((int)musicPlayer.getVolume()) + "%", core::Color::White);
 		core::Text volumeKey = core::Text(drawKeyInfo ? " [+/-]" : "", core::Color::Gray);
 		// repeat:
 		core::Text repeatStatus = core::Text("repeat off ", style.statusOff);
 		core::Text repeatKey = core::Text(drawKeyInfo ? "[l] " : "", core::Color::Gray);
-		if (replay == Replay::One) repeatStatus = core::Text("repeat track ", style.statusOn);
-		else if (replay == Replay::All) repeatStatus = core::Text("repeat list ", style.statusOn);
-		int repeatPos = core::console::getCharCount().x - (volume.str.length() + repeatStatus.str.length() + volumeKey.str.length() + repeatKey.str.length() + volumeReport.str.length());
+		if (musicPlayer.getReplayStatus() == core::MusicPlayer::Replay::One) repeatStatus = core::Text("repeat track ", style.statusOn);
+		else if (musicPlayer.getReplayStatus() == core::MusicPlayer::Replay::All) repeatStatus = core::Text("repeat list ", style.statusOn);
+		int repeatPos = core::console::getCharCount().x - (volume.str.length() + repeatStatus.str.length() + volumeKey.str.length() + repeatKey.str.length() + musicPlayer.volumeReport.str.length());
 		
 		std::cout << playbackStatus << playbackKey << std::string(shufflePos - 1, ' ') << shuffleKey << shuffleStatus << core::endl()
-			<< volume << volumeReport << volumeKey << std::string(repeatPos - 1, ' ') << repeatKey << repeatStatus << core::endl(2);
+			<< volume << musicPlayer.volumeReport << volumeKey << std::string(repeatPos - 1, ' ') << repeatKey << repeatStatus << core::endl(2);
 	}
+	/*
+		if (playlist.getCurrentMusicLoop())
+			std::cout << " [loop]";
+		else
+		{
+			if (playlist.current().playCount == 1)
+				std::cout << " [" << core::Text("1", core::Color::Bright_White) << " time]";
+			else std::cout << " [" << core::Text(std::to_string(playlist.current().playCount), core::Color::Bright_White) << " times]";
+		}
+		std::cout << core::Text(drawKeyInfo ? " [W/S; (L)oop]" : "", core::Color::Gray) << core::endl();
+	*/
 	
 	///////////////////////////////////////////////////////////////////////////////
 	// Duration
 	///////////////////////////////////////////////////////////////////////////////
 	// BUG: progressBarSize is not accurate - there is still space left after track finishes.
 	{
-		core::Time currPlaytime = playlist.isCurrentMusicStopped() ? core::Time() : playlist.getCurrentMusicElapsedTime();
-		core::Time currPlaytimeMax = playlist.isCurrentMusicStopped() ? core::Time() : playlist.getCurrentMusicDuration();
-		std::string currDuration = playlist.size() == 0 ? "-" : getTimeStr(currPlaytime, currPlaytimeMax);
-		std::string duration = playlist.size() == 0 ? "-" : getTimeStr(currPlaytimeMax);
-		std::string durationInfo = currDuration + skipReport.str + " / " + duration;
+		core::Time currPlaytime = musicPlayer.isStopped() ? core::Time() : musicPlayer.getPlayingMusicElapsedTime();
+		core::Time currPlaytimeMax = musicPlayer.isStopped() ? core::Time() : musicPlayer.getPlayingMusicInfo().duration;
+		std::string currDuration = musicPlayer.getActivePlaylistSize() == 0 ? "-" : getTimeStr(currPlaytime, currPlaytimeMax);
+		std::string duration = musicPlayer.getActivePlaylistSize() == 0 ? "-" : getTimeStr(currPlaytimeMax);
+		std::string durationInfo = currDuration + musicPlayer.skipReport.str + " / " + duration;
 		std::string durationSkipForwardKeyInfo = drawKeyInfo ? "["s + core::uc::leftwardsArrow + "] " : "";
 		std::string durationSkipBackwardKeyInfo = drawKeyInfo ? " ["s + core::uc::rightwardsArrow + "]" : "";
 		int durationKeyInfoLength = durationSkipForwardKeyInfo.length() > 0 ? 8 : 0; // [<] ... [>]; note length is wrong because of unicode characters
 		drawPos = core::console::getCharCount().x / 2.f - (durationInfo.length() + durationKeyInfoLength) / 2.f;
-		skipReport.bgcolor = core::Color::White; // TODO set it in constructor
+		//musicPlayer.skipReport.bgcolor = core::Color::White; // TODO set it in constructor
 		core::console::setBgColor(core::Color::Gray);
 
-		float progressBarFactor = currPlaytime.asSeconds() / (currPlaytimeMax == 0s ? 1 : playlist.getCurrentMusicDuration().asSeconds()); // 0..duration
+		float progressBarFactor = currPlaytime.asSeconds() / (currPlaytimeMax == 0s ? 1 : musicPlayer.getPlayingMusicInfo().duration.asSeconds()); // 0..duration
 		int progressBarSize = core::console::getCharCount().x * progressBarFactor; // 0..consoleCharCountX
 
 		std::string spaceBefore(drawPos, ' ');
@@ -694,7 +480,7 @@ void MenuState::draw()
 		coutWithProgressBar(progressBarSize, spaceBefore, style.durationText, style.durationProgressBarText, style.durationProgressBar);
 		coutWithProgressBar(progressBarSize, durationSkipForwardKeyInfo, core::Color::White, style.durationProgressBarText, style.durationProgressBar);
 		coutWithProgressBar(progressBarSize, currDuration, style.durationText, style.durationProgressBarText, style.durationProgressBar);
-		coutWithProgressBar(progressBarSize, skipReport.str, skipReport.fgcolor, skipReport.bgcolor, style.durationProgressBar);
+		coutWithProgressBar(progressBarSize, musicPlayer.skipReport.str, musicPlayer.skipReport.fgcolor, musicPlayer.skipReport.bgcolor, style.durationProgressBar);
 		coutWithProgressBar(progressBarSize, " / ", style.durationText, style.durationProgressBarText, style.durationProgressBar);
 		coutWithProgressBar(progressBarSize, duration, style.durationText, style.durationProgressBarText, style.durationProgressBar);
 		coutWithProgressBar(progressBarSize, durationSkipBackwardKeyInfo, core::Color::White, style.durationProgressBarText, style.durationProgressBar);
@@ -721,9 +507,9 @@ void MenuState::draw()
 void MenuState::onMessage(core::Message message)
 {
 	if (message.id == core::MessageID::CONSOLE_RESIZE) {
-		musicList.onConsoleResize();
-		playlistList.onConsoleResize();
-		directoryList.onConsoleResize();
+		musicPlayer.onConsoleResize();
+		playlistState.onConsoleResize();
+		directoryState.onConsoleResize();
 	}
 }
 

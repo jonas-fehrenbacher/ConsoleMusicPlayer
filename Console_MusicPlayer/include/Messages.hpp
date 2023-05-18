@@ -5,7 +5,8 @@
 enum Message
 {
 	MenuState_EnteredPlaylist = core::MessageID::CUSTOM_MESSAGE,
-	MenuState_SelectedPlaylistEditor,
-	PlayState_Finished,
-	PlaylistEditorState_Finished
+	Playlist_back,
+	Music_Play,
+	Music_Pause,
+	Music_Stop
 };

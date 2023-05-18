@@ -2,15 +2,14 @@
 #include "core/Console.hpp"
 #include "core/SmallTools.hpp"
 #include "core/InputDevice.hpp"
+#include "core/Profiler.hpp"
 #include <sstream>
 #include <Windows.h>
 #include <algorithm>
 #include <cassert>
 #include <iostream>
 
-namespace core {
-	intern const size_t NOINDEX = -1; // -1 stands for no index (see 'selected')
-}
+const size_t core::ScrollableList::NOINDEX = -1;
 
 void core::ScrollableList::init(InitInfo info)
 {
@@ -26,7 +25,7 @@ void core::ScrollableList::init(InitInfo info)
 	isTrappedOnTop_ = false;
 	isTrappedOnBottom_ = false;
 	startDrawIndex = 0;
-	hasFocus = true;
+	hasFocus_ = true;
 	paddingX = 2;
 
 	if (columnLayout.empty()) {
@@ -34,6 +33,7 @@ void core::ScrollableList::init(InitInfo info)
 		Column column;
 		column.length            = Column::LARGEST_ITEM;
 		column.color             = Color::White;
+		column.isVisible         = true;
 		column.hasEmptySpace     = false;
 		column.isLengthInPercent = false;
 		columnLayout.insert(columnLayout.begin(), column);
@@ -41,6 +41,7 @@ void core::ScrollableList::init(InitInfo info)
 		// set default layout - expects only one column.
 		column.length            = 0;
 		column.color             = Color::White;
+		column.isVisible         = true;
 		column.hasEmptySpace     = true;
 		column.isLengthInPercent = false;
 		columnLayout.push_back(column);
@@ -64,12 +65,12 @@ void core::ScrollableList::terminate()
 	drawnItemsSelectionPos = 0;
 	isTrappedOnTop_ = false;
 	isTrappedOnBottom_ = false;
-	hasFocus = true;
+	hasFocus_ = true;
 }
 
 void core::ScrollableList::update()
 {
-	if (!hasFocus) {
+	if (!hasFocus_) {
 		return;
 	}
 
@@ -78,7 +79,7 @@ void core::ScrollableList::update()
 
 void core::ScrollableList::handleEvent()
 {
-	if (!hasFocus) {
+	if (!hasFocus_) {
 		return;
 	}
 
@@ -152,6 +153,8 @@ void core::ScrollableList::move(bool up)
 
 void core::ScrollableList::draw()
 {
+	PROFILE_FUNC
+
 	if (isFirstDraw) {
 		// Make sure everything is updated:
 		calcColumnRawLength();
@@ -196,19 +199,24 @@ void core::ScrollableList::draw()
 			// Needed if user specifies a column with zero size - could cause an error without 'endColumnIndex'.
 			int endColumnIndex = -1;
 			for (auto& column : columnLayout) {
-				if (column._rawLength > 0)
+				if (column.isVisible && column._rawLength > 0)
 					++endColumnIndex;
 			}
 			list[i].insert(list[i].begin(), std::to_string(i + 1)); // because first column is for item numbers and thats not inside ScrollableList::list - its kinda virtual.
 			for (int j = 0; j < (int)columnLayout.size(); ++j)
 			{
+				if (!columnLayout[j].isVisible) {
+					continue;
+				}
+
 				// (1) Set column text:
 				ss.str("");
 				if (j == 0) {
 					// ..in first column the item number is displayed
 					ss << std::right << std::setw(columnLayout[j]._rawLength) << list[i][j];
 				}
-				else {
+				else 
+				{
 					std::string str = list[i][j].substr(0, columnLayout[j]._rawLength); // core::toStr(core::toWStr(list[i][j]).substr(0, columnLayout[j]._rawLength));
 					
 					if (str.length() >= 2 && list[i][j].length() > columnLayout[j]._rawLength) {
@@ -245,7 +253,7 @@ void core::ScrollableList::draw()
 						columnText.fgcolor = columnLayout[j].color; // colorState ? Color::White : Color::Bright_White;
 						columnText.bgcolor = core::Color::None;
 					}
-					if (hasFocus && hasFlag(Options::SelectionMode, options) && i == hover) {
+					if (hasFocus_ && hasFlag(Options::SelectionMode, options) && i == hover) {
 						assert(hover != NOINDEX);
 						columnText.fgcolor = core::Color::Black;
 						columnText.bgcolor = style.hover; // Light_Green, Light_Aqua; Light_Yellow, Bright_White
@@ -308,6 +316,8 @@ void core::ScrollableList::draw()
 			}
 			else if (scrollbarBottom_itemIndex > drawnItemCount - 1) {
 				scrollbarTop_itemIndex += (drawnItemCount - 1) - scrollbarBottom_itemIndex; // note += because the right value is negative.
+				if (scrollbarTop_itemIndex < 0)
+					scrollbarTop_itemIndex = 0; // TODO: this may not be triggered, but is..
 				scrollbarBottom_itemIndex = drawnItemCount - 1;
 			}
 			assert(scrollbarTop_itemIndex >= 0 && scrollbarBottom_itemIndex <= drawnItemCount - 1);
@@ -335,7 +345,7 @@ void core::ScrollableList::drawBorder(bool isTop) const
 {
 	std::string border = "";
 	std::string title = isTop ? " " + name + " " : "";
-	for (int i = 0, borderLength = border.length(); i < (getDrawSize() - 4) - title.length(); ++i) { // size-2 because size includes " ^" / " v"
+	for (int i = 0, borderLength = border.length(); i < (getDrawSize() - 4) - (int)title.length(); ++i) { // size-2 because size includes " ^" / " v"; (int)title.length() is required otherwise I could enter a endless loop.
 		border +=  core::uc::boxDrawingsLightHorizontal;
 	}
 	std::cout << std::string(posX, ' ') 
@@ -377,6 +387,10 @@ void core::ScrollableList::calcColumnRawLength()
 	// Set LARGEST_ITEM:
 	// column should be as large as its largest item.
 	for (int i = 0; i < columnLayout.size(); ++i) {
+		if (!columnLayout[i].isVisible) {
+			continue;
+		}
+
 		if (columnLayout[i].length == Column::LARGEST_ITEM)
 		{
 			if (i == 0) {
@@ -399,6 +413,10 @@ void core::ScrollableList::calcColumnRawLength()
 	{
 		int fixRowSize = 0;
 		for (auto& column : columnLayout) {
+			if (!column.isVisible) {
+				continue;
+			}
+
 			if (!column.isLengthInPercent) {
 				if (column.length == Column::LARGEST_ITEM) {
 					fixRowSize += column._rawLength; // is already set at the top
@@ -418,6 +436,10 @@ void core::ScrollableList::calcColumnRawLength()
 	{
 		int _freeRowSpace = freeRowSpace;
 		for (auto& column : columnLayout) {
+			if (!column.isVisible) {
+				continue;
+			}
+
 			if (column.isLengthInPercent) {
 				column._rawLength = (column.length / 100.f) * freeRowSpace; // W = p% * G
 				_freeRowSpace -= column._rawLength;
@@ -433,11 +455,19 @@ void core::ScrollableList::calcColumnRawLength()
 		int columnWithEmptySpaceCount = 0; // How many columns want to have some of the still free space?
 		int _freeRowSpace = freeRowSpace;
 		for (auto& column : columnLayout) {
+			if (!column.isVisible) {
+				continue;
+			}
+
 			if (column.hasEmptySpace) {
 				++columnWithEmptySpaceCount;
 			}
 		}
 		for (int i = 0; i < columnLayout.size(); ++i) {
+			if (!columnLayout[i].isVisible) {
+				continue;
+			}
+
 			if (columnLayout[i].hasEmptySpace) {
 				columnLayout[i]._rawLength += freeRowSpace / (float)columnWithEmptySpaceCount;
 				_freeRowSpace -= freeRowSpace / (float)columnWithEmptySpaceCount;
@@ -449,6 +479,10 @@ void core::ScrollableList::calcColumnRawLength()
 		// Do I fill the whole row?
 		int totalRowSize = 0;
 		for (auto& column : columnLayout) {
+			if (!column.isVisible) {
+				continue;
+			}
+
 			totalRowSize += column._rawLength;
 			totalRowSize += spaceBetweenColumns;
 		}
@@ -471,14 +505,14 @@ void core::ScrollableList::selectHoveredItem()
 
 void core::ScrollableList::loseFocus()
 {
-	hasFocus = false;
+	hasFocus_ = false;
 	isTrappedOnBottom_ = false;
 	isTrappedOnTop_ = false;
 }
 
 void core::ScrollableList::gainFocus()
 {
-	hasFocus = true;
+	hasFocus_ = true;
 }
 
 void core::ScrollableList::scrollToTop()
@@ -534,12 +568,17 @@ int core::ScrollableList::getPosX() const
 	return posX;
 }
 
-bool core::ScrollableList::isTrappedOnTop()
+bool core::ScrollableList::isTrappedOnTop() const
 {
 	return isTrappedOnTop_;
 }
 
-bool core::ScrollableList::isTrappedOnBottom()
+bool core::ScrollableList::isTrappedOnBottom() const
 {
 	return isTrappedOnBottom_;
+}
+
+bool core::ScrollableList::hasFocus() const
+{
+	return hasFocus_;
 }

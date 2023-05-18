@@ -1,4 +1,5 @@
 #include "core/StateMachine.hpp"
+#include "core/Profiler.hpp"
 
 core::State::State() :
 	isDrawing(true),
@@ -26,6 +27,8 @@ void core::StateMachine::remove(State* state)
 
 void core::StateMachine::update()
 {
+	PROFILE_FUNC
+
 	for (State* state : states) {
 		if (state->isUpdating) {
 			state->update();
@@ -35,6 +38,8 @@ void core::StateMachine::update()
 
 void core::StateMachine::handleEvent()
 {
+	PROFILE_FUNC
+
 	for (State* state : states) {
 		if (state->isUpdating) {
 			state->handleEvent();
@@ -44,6 +49,8 @@ void core::StateMachine::handleEvent()
 
 void core::StateMachine::draw()
 {
+	PROFILE_FUNC
+
 	for (State* state : states) {
 		if (state->isDrawing) {
 			state->draw();

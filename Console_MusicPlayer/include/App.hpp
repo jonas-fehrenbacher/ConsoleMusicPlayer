@@ -1,7 +1,5 @@
 #pragma once
 #include "State/MenuState.hpp"
-#include "State/PlayState.hpp"
-#include "State/PlaylistEditorState.hpp"
 #include "core/Timer.hpp"  
 #include "core/StateMachine.hpp"
 #include "core/MessageBus.hpp"
@@ -26,15 +24,12 @@ public:
 		LoadingScreenStyle          loadingScreen;
 		core::ScrollableList::Style scrollableList;
 		MenuState::Style            menu;
-		PlayState::Style            playState;
 	};
 
 	core::MessageBus      messageBus;
 	bool                  isRunning;
 	core::StateMachine    stateMachine;
 	MenuState             menuState;
-	PlayState             playState;
-	PlaylistEditorState   playlistEditorState;
 	std::vector<fs::path> musicDirs;
 	fs::path              currPlaylist;
 	Style                 style;

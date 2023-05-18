@@ -3,6 +3,7 @@
 #include "core/InputDevice.hpp"
 #include "core/SmallTools.hpp"
 #include "core/Console.hpp"
+#include "core/Profiler.hpp"
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -22,12 +23,13 @@ App::App() :
 	isRunning(true),
 	stateMachine(),
 	menuState(this),
-	playState(this),
-	playlistEditorState(this),
 	drawTimer(),
 	musicDirs(), // do not initialize here, because maybe config.dat does not exist.
 	style()
 {
+	///////////////////////////////////////////////////////////////////////////////
+	// Setup console
+	///////////////////////////////////////////////////////////////////////////////
 	core::console::init();
 	core::console::setTitle("Console Music Player");
 	core::console::setSize(90, 35, true); // 1000, 900
@@ -49,23 +51,26 @@ App::App() :
 	 * - DejaVu Sans Mono (some unicode)
 	 * - Source Code Pro Semibold
 	 */
-
 	// Set style:
 	// ..set this before the loading screen!
 	style = getStyle();
 	core::console::setFgColor(style.fgcolor);
 	core::console::setBgColor(style.bgcolor);
 
-	// Loading screen:
+	///////////////////////////////////////////////////////////////////////////////
+	// Loadijng screen
+	///////////////////////////////////////////////////////////////////////////////
 	std::atomic_bool isInitializing = true;
 	std::thread loadingThread(loadingScreen, &isInitializing, style.loadingScreen);
 
+	///////////////////////////////////////////////////////////////////////////////
+	// Init SDL2
+	///////////////////////////////////////////////////////////////////////////////
 	// Init SDL2:
 	if (SDL_Init(SDL_INIT_EVERYTHING) < 0) { // enables to invoke SDL2 functions
 		std::cout << "SDL initialization failed! SDL Error: " << SDL_GetError() << "\n";
 		__debugbreak();
 	}
-
 	// Init SDL_mixer:
 	// IX_INIT_FLAC | MIX_INIT_MOD | MIX_INIT_MP3 | MIX_INIT_OGG | MIX_INIT_MID | MIX_INIT_OPUS
 	if (Mix_Init(MIX_INIT_FLAC | MIX_INIT_MOD | MIX_INIT_MP3 | MIX_INIT_OGG | MIX_INIT_MID | MIX_INIT_OPUS) == 0) {
@@ -79,7 +84,6 @@ App::App() :
 		std::cout << "SDL mixer initialization failed! SDL Error: " << Mix_GetError() << "\n";
 		__debugbreak();
 	}
-
 	// Create SDL2 window
 	// This is required to receive SDL_Event's.
 	//SDL_WINDOW_HIDDEN | SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS | SDL_WINDOW_KEYBOARD_GRABBED | SDL_WINDOW_MOUSE_GRABBED
@@ -91,8 +95,14 @@ App::App() :
 	//	exit(1);
 	//}
 
+	///////////////////////////////////////////////////////////////////////////////
+	// Init events
+	///////////////////////////////////////////////////////////////////////////////
 	core::inputDevice::init(std::bind(&App::terminate, this), &messageBus);
 	
+	///////////////////////////////////////////////////////////////////////////////
+	// Setup files
+	///////////////////////////////////////////////////////////////////////////////
 	// Clear log file:
 	std::ofstream ofs("data/log.txt");
 	ofs.close();
@@ -112,17 +122,23 @@ App::App() :
 			defaultMusicDir = "";
 		}
 		ofs.open("data/config.dat");
-		ofs << "defaultPlaylist = 0\nisPlaylistShuffled = true\nmusicDirs = " << defaultMusicDir << "\nplaylistLoop = true\ntotalRuntime = nolimit";
+		ofs << "defaultPlaylist = 0\nisPlaylistShuffled = false\nmusicDirs = " << defaultMusicDir << "\nplaylistLoop = none\ntotalRuntime = nolimit";
 		ofs.close();
 		// "D:/Data/Music/", "C:/Users/Jonas/Music/", "music/"
 	}
 
+	///////////////////////////////////////////////////////////////////////////////
+	// Init app
+	///////////////////////////////////////////////////////////////////////////////
 	// Set music directories:
 	// Note set this after config.dat is created and before State::init() is called.
 	musicDirs = getMusicDirsFromConfig();
-
 	// ..after folder and files are created:
 	stateMachine.add(&menuState);
+
+	///////////////////////////////////////////////////////////////////////////////
+	// Message bus
+	///////////////////////////////////////////////////////////////////////////////
 	messageBus.add(std::bind(&App::onMessage, this, std::placeholders::_1));
 
 	// Wait for thread:
@@ -163,11 +179,6 @@ App::Style getStyle()
 	style.menu.durationProgressBar     = core::Color::White;
 	style.menu.durationProgressBarText = core::Color::Black;
 	style.menu.durationText            = core::Color::Black;
-	// style.playState
-	style.playState.durationProgressBar     = core::Color::Light_Purple;
-	style.playState.durationProgressBarText = core::Color::Bright_White;
-	style.playState.durationText            = core::Color::Black;
-	style.playState.text                    = core::Color::White;
 
 	return style;
 }
@@ -320,6 +331,7 @@ void App::mainLoop()
 void App::terminate()
 {
 	core::console::reset();
+	core::logProfiles("data/profiler.log");
 	// Terminating SDL takes to much time (console freezes) and isn't neccessary if program is killed anyway:
 	//Mix_Quit();
 	//SDL_Quit();
@@ -342,25 +354,12 @@ void App::onMessage(core::Message message)
 	if (message.id == Message::MenuState_EnteredPlaylist) {
 		std::string* menuSelectedPlaylistPath = static_cast<std::string*>(message.userData);
 		stateMachine.remove(&menuState);
-		playState.setPlaylist(*menuSelectedPlaylistPath); // required to call init() (for PlayState::playlist::init())
-		// Alternatively, PlayState could receive this message, but I like to handle all my core::StateMachine stuff here.
-		stateMachine.add(&playState);
+		// TODO
 	}
 
-	if (message.id == Message::MenuState_SelectedPlaylistEditor) {
-		stateMachine.remove(&menuState);
-		stateMachine.add(&playlistEditorState);
-	}
-
-	if (message.id == Message::PlayState_Finished) {
+	if (message.id == Message::Playlist_back) {
 		core::console::hardClearScreen();
 		std::cout << "Loading..." << core::endl();
-		stateMachine.remove(&playState);
-		stateMachine.add(&menuState);
-	}
-
-	if (message.id == Message::PlaylistEditorState_Finished) {
-		stateMachine.remove(&playlistEditorState);
-		stateMachine.add(&menuState);
+		// TODO
 	}
 }

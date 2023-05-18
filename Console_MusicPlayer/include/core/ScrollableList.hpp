@@ -42,6 +42,7 @@ namespace core
 
 			int   length;
 			Color color;
+			bool  isVisible;         //< Only visible columns are drawn. Useful if you want to use an filter or don't want to show all entries. If this changes 'calcColumnRawLength' needs to be called!
 			bool  hasEmptySpace;     //< Coulmn gets all available empty space.
 			bool  isLengthInPercent; //< Percentage of the still available empty space in the list. Otherwise length is in character count.
 			int   _rawLength;        //< internal / private raw length (ignore this, its used by core)
@@ -58,6 +59,7 @@ namespace core
 			size_t              hover;                //< At which item should you start scrolling?
 		};
 
+		static const size_t NOINDEX; // -1 stands for no index (see 'selected')
 		Style style;
 
 		void init(InitInfo info);
@@ -86,9 +88,10 @@ namespace core
 		int getDrawSize() const;
 		int getPosX() const;
 		/* User is on the top and scrolls up, but can not leave the list. */
-		bool isTrappedOnTop();
+		bool isTrappedOnTop() const;
 		/* User is on the bottom and scrolls down, but can not leave the list. */
-		bool isTrappedOnBottom();
+		bool isTrappedOnBottom() const;
+		bool hasFocus() const;
 	private:
 		std::vector<Row>         list;
 		size_t                   selected; //< item index which is "selected"
@@ -99,7 +102,7 @@ namespace core
 		int                      drawnItemsSelectionPos; // controls startDrawIndex
 		bool                     isTrappedOnTop_;
 		bool                     isTrappedOnBottom_;
-		bool                     hasFocus;
+		bool                     hasFocus_;
 		int                      posX; // draw position on the x axis (in characters)
 		std::string              name;
 		int                      spaceBetweenColumns;

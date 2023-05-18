@@ -242,9 +242,6 @@ bool core::hasFlag(int flag, int flagList)
 
 void core::setConfig(std::filesystem::path path, const std::map<std::wstring, std::wstring>& config)
 {
-	// Debug:
-	return;
-
 	std::wofstream ofs(path, std::ios::out);
 	for (auto& [name, value] : config) {
 		ofs << name << " = " << value << "\n";

@@ -150,32 +150,34 @@
     <ClInclude Include="include\core\Console.hpp" />
     <ClInclude Include="include\core\InputDevice.hpp" />
     <ClInclude Include="include\core\MessageBus.hpp" />
-    <ClInclude Include="include\core\Playlist.hpp" />
+    <ClInclude Include="include\core\MusicPlayer.hpp" />
+    <ClInclude Include="include\core\Profiler.hpp" />
     <ClInclude Include="include\core\ScrollableList.hpp" />
     <ClInclude Include="include\core\SmallTools.hpp" />
     <ClInclude Include="include\core\StateMachine.hpp" />
     <ClInclude Include="include\core\Time.hpp" />
     <ClInclude Include="include\core\Timer.hpp" />
     <ClInclude Include="include\Messages.hpp" />
+    <ClInclude Include="include\State\DirectoryState.hpp" />
     <ClInclude Include="include\State\MenuState.hpp" />
-    <ClInclude Include="include\State\PlaylistEditorState.hpp" />
-    <ClInclude Include="include\State\PlayState.hpp" />
+    <ClInclude Include="include\State\PlaylistState.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\App.cpp" />
     <ClCompile Include="source\core\Console.cpp" />
     <ClCompile Include="source\core\InputDevice.cpp" />
     <ClCompile Include="source\core\MessageBus.cpp" />
-    <ClCompile Include="source\core\Playlist.cpp" />
+    <ClCompile Include="source\core\MusicPlayer.cpp" />
+    <ClCompile Include="source\core\Profiler.cpp" />
     <ClCompile Include="source\core\ScrollableList.cpp" />
     <ClCompile Include="source\core\SmallTools.cpp" />
     <ClCompile Include="source\core\StateMachine.cpp" />
     <ClCompile Include="source\core\Time.cpp" />
     <ClCompile Include="source\core\Timer.cpp" />
     <ClCompile Include="source\main.cpp" />
+    <ClCompile Include="source\State\DirectoryState.cpp" />
     <ClCompile Include="source\State\MenuState.cpp" />
-    <ClCompile Include="source\State\PlaylistEditorState.cpp" />
-    <ClCompile Include="source\State\PlayState.cpp" />
+    <ClCompile Include="source\State\PlaylistState.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -58,7 +58,7 @@ namespace core
 	public:
 		using Duration = std::chrono::duration<long long, std::nano>;
 
-		explicit Time();
+		Time();
 		/* Usage: Time(20s) */
 		Time(Duration time);
 		~Time();
