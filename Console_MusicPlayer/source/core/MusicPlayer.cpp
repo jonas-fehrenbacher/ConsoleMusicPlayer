@@ -11,7 +11,7 @@
 
 const std::string core::MusicPlayer::ALL_PLAYLIST_NAME = "all.pl";
 
-void core::MusicPlayer::init(std::vector<fs::path> musicDirPaths, ScrollableList::Style style, int options /*= 0*/, Time sleepTime /*= 0ns*/)
+void core::MusicPlayer::init(std::vector<fs::path> musicDirPaths, DrawableList::Style style, int options /*= 0*/, Time sleepTime /*= 0ns*/)
 {
 	///////////////////////////////////////////////////////////////////////////////
 	// Reset all values
@@ -38,10 +38,10 @@ void core::MusicPlayer::init(std::vector<fs::path> musicDirPaths, ScrollableList
 	///////////////////////////////////////////////////////////////////////////////
 	// Set drawable lists layout
 	///////////////////////////////////////////////////////////////////////////////
-	std::vector<core::ScrollableList::Column> listInitInfo_columnLayout;
+	std::vector<core::DrawableList::Column> listInitInfo_columnLayout;
 	{
-		core::ScrollableList::Column column;
-		column.length            = core::ScrollableList::Column::LARGEST_ITEM;
+		core::DrawableList::Column column;
+		column.length            = core::DrawableList::Column::LARGEST_ITEM;
 		column.color             = core::Color::Gray;
 		column.isVisible         = true;
 		column.hasEmptySpace     = false;
@@ -53,17 +53,17 @@ void core::MusicPlayer::init(std::vector<fs::path> musicDirPaths, ScrollableList
 		column.hasEmptySpace     = true;
 		column.isLengthInPercent = false;
 		listInitInfo_columnLayout.push_back(column);
-		column.length            = core::ScrollableList::Column::LARGEST_ITEM;
+		column.length            = core::DrawableList::Column::LARGEST_ITEM;
 		column.color             = core::Color::Aqua;
 		column.isVisible         = true;
 		column.hasEmptySpace     = false;
 		column.isLengthInPercent = false;
 		listInitInfo_columnLayout.push_back(column);
 	}
-	core::ScrollableList::Options listInitInfo_options = (core::ScrollableList::Options)(
-		(int)core::ScrollableList::SelectionMode |
-		//(int)core::ScrollableList::ArrowInput | // I need this keys for changing the track
-		(int)core::ScrollableList::DrawFullX // When this is set then use ScrollableList::getPosX()
+	core::DrawableList::Options listInitInfo_options = (core::DrawableList::Options)(
+		(int)core::DrawableList::SelectionMode |
+		//(int)core::DrawableList::ArrowInput | // I need this keys for changing the track
+		(int)core::DrawableList::DrawFullX // When this is set then use DrawableList::getPosX()
 	);
 	drawableList_initInfo.options             = listInitInfo_options;
 	drawableList_initInfo.style               = style;

@@ -1,13 +1,15 @@
 #pragma once
 
-#include "core/ScrollableList.hpp"
+#include "core/DrawableList.hpp"
+#include "core/StateMachine.hpp"
+#include "core/MessageBus.hpp"
 
 class App;
 namespace core {
     class MusicPlayer;
 }
 
-class PlaylistState
+class PlaylistState : public core::State
 {
 public:
     enum class State
@@ -17,24 +19,20 @@ public:
         // TODO Both
     };
 
-    void init(App* app, core::MusicPlayer* musicPlayer);
-    void terminate();
-    void update();
-    void handleEvent();
-    void draw();
-    void start();
-    void loseFocus();
-    void gainFocus();
-    bool isTrappedOnTop();
-    void scrollToTop();
-    void onConsoleResize();
-    void setDrawKeyInfo(bool drawKeyInfo);
+    PlaylistState(App* app);
+
+    void init() override;
+    void terminate() override;
+    void update() override;
+    void handleEvent() override;
+    void draw() override;
 private:
     App*                 app;
-    //core::Playlist       playlist; // currently playing / active
-    //core::Playlist       playlistView; // currently visible on the screen, may not play music - maybe use core::ScrollableList
-    core::MusicPlayer*   musicPlayer;
-    core::ScrollableList playlistList;
+    core::DrawableList   playlistList;
     State                state;
-    bool                 drawKeyInfo;
+    long long            messageReceiverID;
+
+    bool isTrappedOnTop();
+    void scrollToTop();
+    void onMessage(core::Message message);
 };

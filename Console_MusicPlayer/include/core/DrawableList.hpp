@@ -7,7 +7,7 @@
 namespace core
 {
 	/* UI element */
-	class ScrollableList
+	class DrawableList
 	{
 	public:
 		using Row = std::vector<std::string>; // list of columns

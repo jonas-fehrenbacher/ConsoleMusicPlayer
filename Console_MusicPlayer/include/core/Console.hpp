@@ -38,6 +38,12 @@ namespace core::console
 		None // If Color is None, then the default console color will be used.
 	};
 
+	struct FullColor
+	{
+		Color fg;
+		Color bg;
+	};
+
 	/*
 	 * Use this when consoled is "cleared" by setting the console cursor to the top.
 	 * Actually console is not cleared at all and cursor is just at the top, ready to overwrite everything previously
@@ -136,6 +142,7 @@ namespace core
 {
 	// Otherwise its to verbose..
 	using console::Color;
+	using console::FullColor;
 	using console::tab;
 	using console::endl;
 	using console::Text;

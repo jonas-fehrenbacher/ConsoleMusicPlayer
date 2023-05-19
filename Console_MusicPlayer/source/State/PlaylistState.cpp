@@ -1,5 +1,6 @@
 #include "State/PlaylistState.hpp"
 #include "App.hpp"
+#include "Messages.hpp"
 #include "core/SmallTools.hpp"
 #include "core/InputDevice.hpp"
 #include "core/MusicPlayer.hpp"
@@ -7,26 +8,31 @@
 #include <Windows.h>
 #include <iostream>
 
-// TODO: sync playlist with TrackState::playlist via messageBus
-
-void PlaylistState::init(App* app, core::MusicPlayer* musicPlayer)
+PlaylistState::PlaylistState(App* app) :
+	app(app),
+	playlistList(),
+	state(),
+	messageReceiverID()
 {
-	state = State::PlaylistList;
-	this->app = app;
-	this->musicPlayer = musicPlayer;
-	drawKeyInfo = true;
+
+}
+
+void PlaylistState::init()
+{
+	// Add message listener:
+	messageReceiverID = app->messageBus.add(std::bind(&PlaylistState::onMessage, this, std::placeholders::_1));
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Init playlist list
 	///////////////////////////////////////////////////////////////////////////////
-	core::ScrollableList::Options scrollListFlags = (core::ScrollableList::Options)(
-		(int)core::ScrollableList::SelectionMode |
-		//(int)core::ScrollableList::ArrowInput | // I need this keys for changing the track
-		(int)core::ScrollableList::DrawFullX // When this is set then use ScrollableList::getPosX()
+	core::DrawableList::Options scrollListFlags = (core::DrawableList::Options)(
+		(int)core::DrawableList::SelectionMode |
+		//(int)core::DrawableList::ArrowInput | // I need this keys for changing the track
+		(int)core::DrawableList::DrawFullX // When this is set then use DrawableList::getPosX()
 	);
-	core::ScrollableList::InitInfo sliInfo;
+	core::DrawableList::InitInfo sliInfo;
 	sliInfo.options             = scrollListFlags;
-	sliInfo.style               = app->style.scrollableList;
+	sliInfo.style               = app->style.drawableList;
 	sliInfo.name                = "playlists";
 	sliInfo.columnLayout        = {};
 	sliInfo.spaceBetweenColumns = 3;
@@ -40,16 +46,24 @@ void PlaylistState::init(App* app, core::MusicPlayer* musicPlayer)
 			playlistList.push_back({ it.path().stem().string() });
 
 			// Set music player playlists:
-			musicPlayer->addPlaylist(it.path().u8string());
+			app->musicPlayer.addPlaylist(it.path().u8string());
 		}
 	}
 	// Calculate everything new (important):
 	playlistList.onConsoleResize();
+
+	// start:
+	app->musicPlayer.resumeDrawableListEvents();
+	playlistList.gainFocus();
+	scrollToTop();
+	app->musicPlayer.setDrawnPlaylist("");
+	state = State::PlaylistList;
 }
 
 void PlaylistState::terminate()
 {
 	playlistList.terminate();
+	app->messageBus.remove(messageReceiverID);
 }
 
 void PlaylistState::update()
@@ -57,7 +71,7 @@ void PlaylistState::update()
 	// playlist list:
 	if (state == State::PlaylistList) 
 	{
-		std::string selectedPlaylistName = playlistList.getSelectedIndex() == core::ScrollableList::NOINDEX ? "" : playlistList.getSelected()[0];
+		std::string selectedPlaylistName = playlistList.getSelectedIndex() == core::DrawableList::NOINDEX ? "" : playlistList.getSelected()[0];
 		// Update data:
 		playlistList.clear();
 		int i = 0;
@@ -73,11 +87,17 @@ void PlaylistState::update()
 			}
 		}
 		// Update border color:
-		if (musicPlayer->isStopped())      playlistList.style.border = core::Color::Light_Red;
-		else if (musicPlayer->isPaused())  playlistList.style.border = core::Color::Light_Aqua;
-		else if (musicPlayer->isPlaying()) playlistList.style.border = core::Color::Light_Green;
+		if (app->musicPlayer.isStopped())      playlistList.style.border = core::Color::Light_Red;
+		else if (app->musicPlayer.isPaused())  playlistList.style.border = core::Color::Light_Aqua;
+		else if (app->musicPlayer.isPlaying()) playlistList.style.border = core::Color::Light_Green;
 
 		playlistList.update();
+	}
+
+	if (isTrappedOnTop()) {
+		app->musicPlayer.stopDrawableListEvents();
+		playlistList.loseFocus();
+		app->navBar.gainFocus();
 	}
 }
 
@@ -88,19 +108,19 @@ void PlaylistState::handleEvent()
 	///////////////////////////////////////////////////////////////////////////////
 	if (core::inputDevice::isKeyPressed('B')) {
 		state = State::PlaylistList;
-		musicPlayer->setDrawnPlaylist("");
+		app->musicPlayer.setDrawnPlaylist("");
 	}
 
 	if (state == State::PlaylistList)
 	{
 		playlistList.handleEvent();
 
-		if (core::inputDevice::isKeyPressed(VK_RETURN))
+		if (playlistList.hasFocus() && core::inputDevice::isKeyPressed(VK_RETURN))
 		{
 			playlistList.selectHoveredItem();
-			std::string selectedPlaylistName = playlistList.getSelectedIndex() == core::ScrollableList::NOINDEX ? "" : playlistList.getSelected()[0] + ".pl";
+			std::string selectedPlaylistName = playlistList.getSelectedIndex() == core::DrawableList::NOINDEX ? "" : playlistList.getSelected()[0] + ".pl";
 			state = State::Playlist;
-			musicPlayer->setDrawnPlaylist(selectedPlaylistName);
+			app->musicPlayer.setDrawnPlaylist(selectedPlaylistName);
 			
 			// Update config:
 			std::map<std::wstring, std::wstring> config = core::getConfig("data/config.dat");
@@ -108,48 +128,36 @@ void PlaylistState::handleEvent()
 			core::setConfig("data/config.dat", config);
 		}
 	}
+
+	app->navBar.handleEvents();
 }
 
 void PlaylistState::draw()
 {
-	// Draw Back key:
-	if (state != State::PlaylistList) {
-		std::string backInfo = drawKeyInfo ? " <[B]ack"s : " <";
-		std::cout << core::Text(backInfo, core::Color::White) << core::endl();
-		musicPlayer->draw();
-	}
+	app->title.draw();
+	app->navBar.draw();
+
+	core::console::setBgColor(app->style.default.bg);
+	std::cout << core::endl();
 
 	if (state == State::PlaylistList) {
 		playlistList.draw();
 	}
-}
+	else {
+		std::string backInfo = app->isDrawKeyInfo ? " <[B]ack"s : " <";
+		std::cout << core::Text(backInfo, core::Color::White) << core::endl();
+		app->musicPlayer.draw();
+	}
 
-void PlaylistState::start()
-{
-	musicPlayer->resumeDrawableListEvents();
-	playlistList.gainFocus();
-	scrollToTop();
-	musicPlayer->setDrawnPlaylist("");
-	state = State::PlaylistList;
-}
-
-void PlaylistState::loseFocus()
-{
-	musicPlayer->stopDrawableListEvents();
-	playlistList.loseFocus();
-}
-
-void PlaylistState::gainFocus()
-{
-	musicPlayer->resumeDrawableListEvents();
-	playlistList.gainFocus();
+	app->playStatus.draw();
+	app->footer.draw();
 }
 
 bool PlaylistState::isTrappedOnTop()
 {
 	bool isTrappedOnTop = false;
 	if (state == State::Playlist) {
-		isTrappedOnTop = musicPlayer->isTrappedOnTop();
+		isTrappedOnTop = app->musicPlayer.isTrappedOnTop();
 	}
 	else if (state == State::PlaylistList) {
 		isTrappedOnTop = playlistList.isTrappedOnTop();
@@ -160,19 +168,26 @@ bool PlaylistState::isTrappedOnTop()
 void PlaylistState::scrollToTop()
 {
 	if (state == State::Playlist) {
-		musicPlayer->scrollDrawableListToTop();
+		app->musicPlayer.scrollDrawableListToTop();
 	}
 	else if (state == State::PlaylistList) {
 		playlistList.scrollToTop();
 	}
 }
 
-void PlaylistState::onConsoleResize()
+void PlaylistState::onMessage(core::Message message)
 {
-	playlistList.onConsoleResize();
-}
+	if (message.id == core::MessageID::CONSOLE_RESIZE) {
+		playlistList.onConsoleResize();
+	}
 
-void PlaylistState::setDrawKeyInfo(bool drawKeyInfo)
-{
-	this->drawKeyInfo = drawKeyInfo;
+	if (message.id == Message::NAVBAR_SHORTCUT_TRIGGERED) {
+		app->musicPlayer.stopDrawableListEvents();
+		playlistList.loseFocus();
+	}
+
+	if (message.id == Message::NAVBAR_BACK && *(NavBar::Option*)message.userData == NavBar::Option::Playlists) {
+		app->musicPlayer.resumeDrawableListEvents();
+		playlistList.gainFocus();
+	}
 }

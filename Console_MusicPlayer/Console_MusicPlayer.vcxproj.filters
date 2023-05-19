@@ -58,10 +58,10 @@
     <ClInclude Include="include\core\MessageBus.hpp">
       <Filter>Headerdateien\core</Filter>
     </ClInclude>
-    <ClInclude Include="include\core\ScrollableList.hpp">
+    <ClInclude Include="include\core\DrawableList.hpp">
       <Filter>Headerdateien\core</Filter>
     </ClInclude>
-    <ClInclude Include="include\State\MenuState.hpp">
+    <ClInclude Include="include\State\TrackState.hpp">
       <Filter>Headerdateien\State</Filter>
     </ClInclude>
     <ClInclude Include="include\App.hpp">
@@ -85,12 +85,24 @@
     <ClInclude Include="include\core\MusicPlayer.hpp">
       <Filter>Headerdateien\core</Filter>
     </ClInclude>
+    <ClInclude Include="include\Title.hpp">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Footer.hpp">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="include\NavBar.hpp">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="include\PlayStatus.hpp">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\core\MessageBus.cpp">
       <Filter>Quelldateien\core</Filter>
     </ClCompile>
-    <ClCompile Include="source\core\ScrollableList.cpp">
+    <ClCompile Include="source\core\DrawableList.cpp">
       <Filter>Quelldateien\core</Filter>
     </ClCompile>
     <ClCompile Include="source\core\StateMachine.cpp">
@@ -108,7 +120,7 @@
     <ClCompile Include="source\core\InputDevice.cpp">
       <Filter>Quelldateien\core</Filter>
     </ClCompile>
-    <ClCompile Include="source\State\MenuState.cpp">
+    <ClCompile Include="source\State\TrackState.cpp">
       <Filter>Quelldateien\State</Filter>
     </ClCompile>
     <ClCompile Include="source\App.cpp">
@@ -131,6 +143,18 @@
     </ClCompile>
     <ClCompile Include="source\core\MusicPlayer.cpp">
       <Filter>Quelldateien\core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\PlayStatus.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Title.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Footer.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="source\NavBar.cpp">
+      <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

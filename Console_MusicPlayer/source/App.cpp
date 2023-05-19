@@ -21,11 +21,14 @@ intern void loadingScreen(std::atomic_bool* isInitializing, App::LoadingScreenSt
 App::App() :
 	messageBus(),
 	isRunning(true),
-	stateMachine(),
-	menuState(this),
+	activeState(nullptr),
+	trackState(this),
+	playlistState(this),
+	directoryState(this),
 	drawTimer(),
 	musicDirs(), // do not initialize here, because maybe config.dat does not exist.
-	style()
+	style(),
+	isDrawKeyInfo(true)
 {
 	///////////////////////////////////////////////////////////////////////////////
 	// Setup console
@@ -54,11 +57,11 @@ App::App() :
 	// Set style:
 	// ..set this before the loading screen!
 	style = getStyle();
-	core::console::setFgColor(style.fgcolor);
-	core::console::setBgColor(style.bgcolor);
+	core::console::setFgColor(style.default.fg);
+	core::console::setBgColor(style.default.bg);
 
 	///////////////////////////////////////////////////////////////////////////////
-	// Loadijng screen
+	// Loading screen
 	///////////////////////////////////////////////////////////////////////////////
 	std::atomic_bool isInitializing = true;
 	std::thread loadingThread(loadingScreen, &isInitializing, style.loadingScreen);
@@ -128,18 +131,50 @@ App::App() :
 	}
 
 	///////////////////////////////////////////////////////////////////////////////
-	// Init app
+	// Init music dirs
 	///////////////////////////////////////////////////////////////////////////////
 	// Set music directories:
 	// Note set this after config.dat is created and before State::init() is called.
 	musicDirs = getMusicDirsFromConfig();
-	// ..after folder and files are created:
-	stateMachine.add(&menuState);
 
 	///////////////////////////////////////////////////////////////////////////////
-	// Message bus
+	// Get config
+	///////////////////////////////////////////////////////////////////////////////
+	// Do not do this in the constructor, because in App::App I need to check if the directory exists.
+	std::map<std::wstring, std::wstring> config = core::getConfig("data/config.dat");
+	if (config.count(L"defaultPlaylist") == 0) {
+		core::log("Error: defaultPlaylist not found in config.dat");
+		__debugbreak();
+	}
+
+	///////////////////////////////////////////////////////////////////////////////
+	// Init music player
+	///////////////////////////////////////////////////////////////////////////////
+	core::Time musicPlayer_sleepTime = 0s;
+	if (config[L"totalRuntime"] != L"nolimit") {
+		musicPlayer_sleepTime = core::Seconds(std::stoi(config[L"totalRuntime"]));
+	}
+	int musicPlayer_options =
+		(config[L"isPlaylistShuffled"] == L"true" ? core::MusicPlayer::Shuffle : 0) |
+		(config[L"playlistLoop"] == L"none" ? 0 : (config[L"playlistLoop"] == L"one" ? core::MusicPlayer::LoopOne : core::MusicPlayer::LoopAll)) |
+		core::MusicPlayer::FadeOut;
+	musicPlayer.init(musicDirs, style.drawableList, musicPlayer_options, musicPlayer_sleepTime);
+
+	///////////////////////////////////////////////////////////////////////////////
+	// Init rest
 	///////////////////////////////////////////////////////////////////////////////
 	messageBus.add(std::bind(&App::onMessage, this, std::placeholders::_1));
+	title.init(this);
+	navBar.init(this);
+	playStatus.init(this);
+	footer.init(this);
+
+	///////////////////////////////////////////////////////////////////////////////
+	// Init states
+	///////////////////////////////////////////////////////////////////////////////
+	// ..after folder and files are created:
+	activeState = &trackState;
+	activeState->init();
 
 	// Wait for thread:
 	//std::this_thread::sleep_for(10s);
@@ -152,37 +187,48 @@ App::Style getStyle()
 	App::Style style;
 
 	// Set app style:
-	style.fgcolor = core::Color::White;
-	style.bgcolor = core::Color::Black;
+	style.default = { core::Color::White, core::Color::Black };
 	// style.loadingScreen:
 	style.loadingScreen.background      = core::Color::White;
 	style.loadingScreen.title           = core::Color::Black;
 	style.loadingScreen.loadingText     = core::Color::Gray;
 	style.loadingScreen.loadingTextAnim = core::Color::Bright_White;
 	// style.scrollableList:
-	style.scrollableList.border              = core::Color::Gray;
-	style.scrollableList.title               = core::Color::Bright_White;
-	style.scrollableList.scrollbarArrow      = core::Color::Aqua;
-	style.scrollableList.scrollbar           = core::Color::Aqua;
-	style.scrollableList.scrollbarEmptySpace = core::Color::White;
-	style.scrollableList.item                = core::Color::White;
-	style.scrollableList.borderItem          = core::Color::Gray;
-	style.scrollableList.selected            = core::Color::Green;
-	style.scrollableList.hover               = core::Color::Bright_White;
-	// style.menu:
-	style.menu.arrow                   = core::Color::Gray;
-	style.menu.item                    = core::Color::Black;
-	style.menu.selected                = core::Color::Bright_White;
-	style.menu.hover                   = core::Color::Black;
-	style.menu.statusOn                = core::Color::Green;
-	style.menu.statusOff               = core::Color::Gray;
-	style.menu.durationProgressBar     = core::Color::White;
-	style.menu.durationProgressBarText = core::Color::Black;
-	style.menu.durationText            = core::Color::Black;
+	style.drawableList.border              = core::Color::Gray;
+	style.drawableList.title               = core::Color::Bright_White;
+	style.drawableList.scrollbarArrow      = core::Color::Aqua;
+	style.drawableList.scrollbar           = core::Color::Aqua;
+	style.drawableList.scrollbarEmptySpace = core::Color::White;
+	style.drawableList.item                = core::Color::White;
+	style.drawableList.borderItem          = core::Color::Gray;
+	style.drawableList.selected            = core::Color::Green;
+	style.drawableList.hover               = core::Color::Bright_White;
+	// Title:
+	style.title.background  = core::Color::Bright_White;
+	style.title.title       = core::Color::Black;
+	style.title.trackNumber = core::Color::Black;
+	style.title.keyInfo     = core::Color::White;
+	style.title.exitSymbol  = core::Color::Gray;
+	style.title.lockStatus  = core::Color::Gray;
+	// NavBar:
+	style.navBar.background    = core::Color::Bright_White;
+	style.navBar.keyInfo       = core::Color::White;
+	style.navBar.item          = { core::Color::Black, core::Color::None };
+	style.navBar.item_hover    = { core::Color::Black, core::Color::White };
+	style.navBar.item_selected = { core::Color::Bright_White, core::Color::Gray };
+	// PlayStatus:
+	style.playStatus.statusOn                = core::Color::Green;
+	style.playStatus.statusOff               = core::Color::Gray;
+	style.playStatus.durationProgressBar     = core::Color::White;
+	style.playStatus.durationProgressBarText = core::Color::Black;
+	style.playStatus.durationText            = core::Color::Black;
+	// Footer:
+	style.footer.background      = core::Color::White;
+	style.footer.keyShortcut     = { core::Color::Bright_White, core::Color::Aqua };
+	style.footer.keyShortcutText = core::Color::Gray;
 
 	return style;
 }
-
 
 intern void loadingScreen(std::atomic_bool* isInitializing, App::LoadingScreenStyle style)
 {
@@ -305,21 +351,28 @@ intern std::vector<fs::path> getMusicDirsFromConfig()
 	return musicDirs;
 }
 
+void App::terminate()
+{
+	core::console::reset();
+	core::logProfiles("data/profiler.log");
+	musicPlayer.terminate();
+	// Terminating SDL takes to much time (console freezes) and isn't neccessary if program is killed anyway:
+	//Mix_Quit();
+	//SDL_Quit();
+}
+
 void App::mainLoop()
 {
 	while (isRunning)
 	{
 		handleEvents();
 
-		stateMachine.update();
-		messageBus.update();
-		// maybe update musicDirs (optional)
-		core::inputDevice::update();
+		update();
 
 		if (drawTimer.getElapsedTime() >= 250ms) {
 			// The more you draw, the less frequent handleEvent is called and it happens that keys are missed (maybe use somehow SDL...)
 			core::console::clearScreen();
-			stateMachine.draw();
+			draw();
 			drawTimer.restart();
 		}
 	}
@@ -328,38 +381,68 @@ void App::mainLoop()
 	terminate();
 }
 
-void App::terminate()
+void App::update()
 {
-	core::console::reset();
-	core::logProfiles("data/profiler.log");
-	// Terminating SDL takes to much time (console freezes) and isn't neccessary if program is killed anyway:
-	//Mix_Quit();
-	//SDL_Quit();
+	activeState->update();
+	messageBus.update();
+	// maybe update musicDirs (optional)
+	core::inputDevice::update();
+	musicPlayer.update();
 }
 
 void App::handleEvents()
 {
-	stateMachine.handleEvent();
+	///////////////////////////////////////////////////////////////////////////////
+	// Exit
+	///////////////////////////////////////////////////////////////////////////////
 	if (core::inputDevice::isKeyPressed(VK_ESCAPE)) {
 		isRunning = false;
 	}
+
+	///////////////////////////////////////////////////////////////////////////////
+	// Lock
+	///////////////////////////////////////////////////////////////////////////////
+	if (core::inputDevice::isKeyPressed(VK_F12, true)) {
+		core::inputDevice::lock(!core::inputDevice::isLocked());
+	}
+
+	///////////////////////////////////////////////////////////////////////////////
+	// Hide key
+	///////////////////////////////////////////////////////////////////////////////
+	if (core::inputDevice::isKeyPressed('K')) {
+		isDrawKeyInfo = !isDrawKeyInfo;
+	}
+
+	///////////////////////////////////////////////////////////////////////////////
+	// States
+	///////////////////////////////////////////////////////////////////////////////
+	activeState->handleEvent();
+
+	///////////////////////////////////////////////////////////////////////////////
+	// Music player
+	///////////////////////////////////////////////////////////////////////////////
+	musicPlayer.handleEvents();
+}
+
+void App::draw()
+{
+	activeState->draw();
+	//musicPlayer.draw();
 }
 
 void App::onMessage(core::Message message)
 {
 	if (message.id == core::MessageID::CONSOLE_RESIZE) {
 		core::console::hideCursor(); // is required, because somehow cursor is shown again after reset
+		musicPlayer.onConsoleResize();
 	}
 
-	if (message.id == Message::MenuState_EnteredPlaylist) {
-		std::string* menuSelectedPlaylistPath = static_cast<std::string*>(message.userData);
-		stateMachine.remove(&menuState);
-		// TODO
-	}
-
-	if (message.id == Message::Playlist_back) {
-		core::console::hardClearScreen();
-		std::cout << "Loading..." << core::endl();
-		// TODO
+	if (message.id == Message::NAVBAR_OPTION_SELECTED) {
+		NavBar::Option option = *static_cast<NavBar::Option*>(message.userData);
+		activeState->terminate();
+		if (option == NavBar::Option::AllMusic)         activeState = &trackState;
+		else if (option == NavBar::Option::Playlists)   activeState = &playlistState;
+		else if (option == NavBar::Option::Directories) activeState = &directoryState;
+		activeState->init();
 	}
 }

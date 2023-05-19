@@ -1,4 +1,4 @@
-﻿#include "core/ScrollableList.hpp"
+﻿#include "core/DrawableList.hpp"
 #include "core/Console.hpp"
 #include "core/SmallTools.hpp"
 #include "core/InputDevice.hpp"
@@ -9,9 +9,9 @@
 #include <cassert>
 #include <iostream>
 
-const size_t core::ScrollableList::NOINDEX = -1;
+const size_t core::DrawableList::NOINDEX = -1;
 
-void core::ScrollableList::init(InitInfo info)
+void core::DrawableList::init(InitInfo info)
 {
 	this->name = info.name;
 	this->sizeInside = info.sizeInside;
@@ -54,7 +54,7 @@ void core::ScrollableList::init(InitInfo info)
 	onConsoleResize(); // calls calcColumnRawLength();
 }
 
-void core::ScrollableList::terminate()
+void core::DrawableList::terminate()
 {
 	list.clear();
 	startDrawIndex = 0;
@@ -68,7 +68,7 @@ void core::ScrollableList::terminate()
 	hasFocus_ = true;
 }
 
-void core::ScrollableList::update()
+void core::DrawableList::update()
 {
 	if (!hasFocus_) {
 		return;
@@ -77,7 +77,7 @@ void core::ScrollableList::update()
 	// TODO: initList every few seconds... maybe in another thread.
 }
 
-void core::ScrollableList::handleEvent()
+void core::DrawableList::handleEvent()
 {
 	if (!hasFocus_) {
 		return;
@@ -104,7 +104,7 @@ void core::ScrollableList::handleEvent()
 	//}
 }
 
-void core::ScrollableList::move(bool up)
+void core::DrawableList::move(bool up)
 {
 	if (hasFlag(Options::SelectionMode, options))
 	{
@@ -151,7 +151,7 @@ void core::ScrollableList::move(bool up)
 	}
 }
 
-void core::ScrollableList::draw()
+void core::DrawableList::draw()
 {
 	PROFILE_FUNC
 
@@ -336,12 +336,12 @@ void core::ScrollableList::draw()
 	drawBorder(false);
 }
 
-int core::ScrollableList::getItemNumberDrawSize() const
+int core::DrawableList::getItemNumberDrawSize() const
 {
 	return std::to_string(list.size()).length();
 }
 
-void core::ScrollableList::drawBorder(bool isTop) const
+void core::DrawableList::drawBorder(bool isTop) const
 {
 	std::string border = "";
 	std::string title = isTop ? " " + name + " " : "";
@@ -357,7 +357,7 @@ void core::ScrollableList::drawBorder(bool isTop) const
 		<< core::endl();
 }
 
-void core::ScrollableList::onConsoleResize()
+void core::DrawableList::onConsoleResize()
 {
 	posX = 1;
 	if (hasFlag(Options::DrawCentered, options)) {
@@ -372,17 +372,17 @@ void core::ScrollableList::onConsoleResize()
 	calcColumnRawLength(); // call this after sizeInside is updated
 }
 
-void core::ScrollableList::clear()
+void core::DrawableList::clear()
 {
 	list.clear();
 }
 
-void core::ScrollableList::push_back(Row item)
+void core::DrawableList::push_back(Row item)
 {
 	list.push_back(item);
 }
 
-void core::ScrollableList::calcColumnRawLength()
+void core::DrawableList::calcColumnRawLength()
 {
 	// Set LARGEST_ITEM:
 	// column should be as large as its largest item.
@@ -492,64 +492,64 @@ void core::ScrollableList::calcColumnRawLength()
 	}
 }
 
-void core::ScrollableList::select(int index)
+void core::DrawableList::select(int index)
 {
 	selected = index;
 }
 
-void core::ScrollableList::selectHoveredItem()
+void core::DrawableList::selectHoveredItem()
 {
 	assert(hover != NOINDEX);
 	selected = hover;
 }
 
-void core::ScrollableList::loseFocus()
+void core::DrawableList::loseFocus()
 {
 	hasFocus_ = false;
 	isTrappedOnBottom_ = false;
 	isTrappedOnTop_ = false;
 }
 
-void core::ScrollableList::gainFocus()
+void core::DrawableList::gainFocus()
 {
 	hasFocus_ = true;
 }
 
-void core::ScrollableList::scrollToTop()
+void core::DrawableList::scrollToTop()
 {
 	hover = 0;
 	startDrawIndex = 0;
 }
 
-size_t core::ScrollableList::size()
+size_t core::DrawableList::size()
 {
 	return list.size();
 }
 
-size_t core::ScrollableList::getSelectedIndex()
+size_t core::DrawableList::getSelectedIndex()
 {
 	return selected;
 }
 
-core::ScrollableList::Row core::ScrollableList::getSelected()
+core::DrawableList::Row core::DrawableList::getSelected()
 {
 	assert(selected != NOINDEX);
 	return list.at(selected);
 }
 
-size_t core::ScrollableList::getHoverIndex()
+size_t core::DrawableList::getHoverIndex()
 {
 	assert(hover != NOINDEX);
 	return hover;
 }
 
-core::ScrollableList::Row core::ScrollableList::getHover()
+core::DrawableList::Row core::DrawableList::getHover()
 {
 	assert(hover != NOINDEX);
 	return list.at(hover);
 }
 
-int core::ScrollableList::getDrawSize() const
+int core::DrawableList::getDrawSize() const
 {
 	// Border length:
 	int size = 0;
@@ -563,22 +563,22 @@ int core::ScrollableList::getDrawSize() const
 	return size;
 }
 
-int core::ScrollableList::getPosX() const
+int core::DrawableList::getPosX() const
 {
 	return posX;
 }
 
-bool core::ScrollableList::isTrappedOnTop() const
+bool core::DrawableList::isTrappedOnTop() const
 {
 	return isTrappedOnTop_;
 }
 
-bool core::ScrollableList::isTrappedOnBottom() const
+bool core::DrawableList::isTrappedOnBottom() const
 {
 	return isTrappedOnBottom_;
 }
 
-bool core::ScrollableList::hasFocus() const
+bool core::DrawableList::hasFocus() const
 {
 	return hasFocus_;
 }

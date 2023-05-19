@@ -1,14 +1,20 @@
 #pragma once
-#include "core/DrawableList.hpp"
+
 #include "core/StateMachine.hpp"
 #include "core/MessageBus.hpp"
+#include "core/Console.hpp"
 
 class App;
 
-class DirectoryState : public core::State
+class TrackState : public core::State
 {
 public:
-    DirectoryState(App* app);
+    struct Style
+    {
+
+    };
+
+    TrackState(App* app);
 
     void init() override;
     void terminate() override;
@@ -16,9 +22,8 @@ public:
     void handleEvent() override;
     void draw() override;
 private:
-    App*                 app;
-    core::DrawableList   list;
-    long long            messageReceiverID;
+    App*      app;
+    long long messageReceiverID;
 
     void onMessage(core::Message message);
 };

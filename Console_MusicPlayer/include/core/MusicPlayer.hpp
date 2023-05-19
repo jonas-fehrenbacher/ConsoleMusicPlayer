@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Timer.hpp"
-#include "ScrollableList.hpp"
+#include "DrawableList.hpp"
 #include <SDL.h>
 #include <SDL_mixer.h>
 #include <string>
@@ -59,7 +59,7 @@ namespace core
 		core::Text skipReport;
 		core::Text volumeReport;
 
-		void init(std::vector<fs::path> musicDirPaths, ScrollableList::Style style, int options = 0, Time sleepTime = 0ns);
+		void init(std::vector<fs::path> musicDirPaths, DrawableList::Style style, int options = 0, Time sleepTime = 0ns);
 		void terminate();
 		void addPlaylist(fs::path playlistFilePath);
 		void update();
@@ -102,7 +102,7 @@ namespace core
 		{
 			std::string      name;
 			std::vector<int> musicIndexList; //< music index from musicInfoList
-			ScrollableList   drawableList; //< is in the order of the currently playing playlist; Is in 'Playlist', so that unactive playlists can be drawn.
+			DrawableList     drawableList; //< is in the order of the currently playing playlist; Is in 'Playlist', so that unactive playlists can be drawn.
 		};
 
 		Mix_Music*                     music; // currently playing music
@@ -125,7 +125,7 @@ namespace core
 		Replay                         replayStatus;
 		core::Timer                    cooldownSkipReport;
 		core::Timer                    cooldownVolumeReport;
-		core::ScrollableList::InitInfo drawableList_initInfo;
+		core::DrawableList::InitInfo   drawableList_initInfo;
 
 		void addMusic(std::filesystem::path musicFilePath);
 		/* return playing music index from Playlist::musicIndexList */
