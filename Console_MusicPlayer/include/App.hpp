@@ -35,9 +35,10 @@ public:
 		Footer::Style               footer;
 	};
 
+	const fs::path        configFilePath;
 	core::MessageBus      messageBus;
 	bool                  isRunning;
-	core::State*          activeState;
+	core::ActiveState     activeState;
 	TrackState            trackState;
 	PlaylistState         playlistState;
 	DirectoryState        directoryState;

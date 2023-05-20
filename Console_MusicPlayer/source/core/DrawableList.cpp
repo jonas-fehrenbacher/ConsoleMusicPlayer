@@ -33,6 +33,7 @@ void core::DrawableList::init(InitInfo info)
 		Column column;
 		column.length            = Column::LARGEST_ITEM;
 		column.color             = Color::White;
+		column.alignRight        = true;
 		column.isVisible         = true;
 		column.hasEmptySpace     = false;
 		column.isLengthInPercent = false;
@@ -41,6 +42,7 @@ void core::DrawableList::init(InitInfo info)
 		// set default layout - expects only one column.
 		column.length            = 0;
 		column.color             = Color::White;
+		column.alignRight        = false;
 		column.isVisible         = true;
 		column.hasEmptySpace     = true;
 		column.isLengthInPercent = false;
@@ -89,10 +91,10 @@ void core::DrawableList::handleEvent()
 		move(mouseWheelScrollEvent == inputDevice::MouseWheelScroll::Up);
 	}
 	if (hasFlag(Options::ArrowInput, options)) {
-		if (core::inputDevice::isKeyPressed(VK_UP)) {
+		if (core::inputDevice::isKeyPressed(inputDevice::Key::Up)) {
 			move(true);
 		}
-		else if (core::inputDevice::isKeyPressed(VK_DOWN)) {
+		else if (core::inputDevice::isKeyPressed(inputDevice::Key::Down)) {
 			move(false);
 		}
 	}
@@ -210,12 +212,6 @@ void core::DrawableList::draw()
 				}
 
 				// (1) Set column text:
-				ss.str("");
-				if (j == 0) {
-					// ..in first column the item number is displayed
-					ss << std::right << std::setw(columnLayout[j]._rawLength) << list[i][j];
-				}
-				else 
 				{
 					std::string str = list[i][j].substr(0, columnLayout[j]._rawLength); // core::toStr(core::toWStr(list[i][j]).substr(0, columnLayout[j]._rawLength));
 					
@@ -232,7 +228,13 @@ void core::DrawableList::draw()
 						// the window flashes (even when I immediatelly overdraw it - it flickers). The best solution is to just set this offset bellow after
 						// I outputted it regularly.
 					}
-					ss << str;
+					ss.str("");
+					if (columnLayout[j].alignRight) {
+						ss << std::right << std::setw(columnLayout[j]._rawLength) << str;
+					}
+					else {
+						ss << str;
+					}
 				}
 				columnText = ss.str();
 
@@ -521,32 +523,37 @@ void core::DrawableList::scrollToTop()
 	startDrawIndex = 0;
 }
 
-size_t core::DrawableList::size()
+size_t core::DrawableList::size() const
 {
 	return list.size();
 }
 
-size_t core::DrawableList::getSelectedIndex()
+size_t core::DrawableList::getSelectedIndex() const
 {
 	return selected;
 }
 
-core::DrawableList::Row core::DrawableList::getSelected()
+core::DrawableList::Row core::DrawableList::getSelected() const
 {
 	assert(selected != NOINDEX);
 	return list.at(selected);
 }
 
-size_t core::DrawableList::getHoverIndex()
+size_t core::DrawableList::getHoverIndex() const
 {
 	assert(hover != NOINDEX);
 	return hover;
 }
 
-core::DrawableList::Row core::DrawableList::getHover()
+core::DrawableList::Row core::DrawableList::getHover() const
 {
 	assert(hover != NOINDEX);
 	return list.at(hover);
+}
+
+const std::vector<core::DrawableList::Row>& core::DrawableList::get() const
+{
+	return list;
 }
 
 int core::DrawableList::getDrawSize() const

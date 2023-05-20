@@ -44,9 +44,6 @@ void PlaylistState::init()
 		if (it.is_regular_file() && it.path().extension() == ".pl") {
 			// Set playlist list:
 			playlistList.push_back({ it.path().stem().string() });
-
-			// Set music player playlists:
-			app->musicPlayer.addPlaylist(it.path().u8string());
 		}
 	}
 	// Calculate everything new (important):
@@ -58,6 +55,13 @@ void PlaylistState::init()
 	scrollToTop();
 	app->musicPlayer.setDrawnPlaylist("");
 	state = State::PlaylistList;
+	// Select playing playlist:
+	for (int i = 0; i < playlistList.get().size(); ++i) {
+		if (playlistList.get()[i][0] + ".pl" == app->musicPlayer.getActivePlaylistName()) {
+			//.. playlist is playing
+			playlistList.select(i);
+		}
+	}
 }
 
 void PlaylistState::terminate()
@@ -99,6 +103,11 @@ void PlaylistState::update()
 		playlistList.loseFocus();
 		app->navBar.gainFocus();
 	}
+
+	if (playlistList.getHover()[0] + ".pl" == app->musicPlayer.getActivePlaylistName()) {
+		//.. viewed playlist is playing
+		playlistList.selectHoveredItem();
+	}
 }
 
 void PlaylistState::handleEvent()
@@ -106,7 +115,7 @@ void PlaylistState::handleEvent()
 	///////////////////////////////////////////////////////////////////////////////
 	// Back key
 	///////////////////////////////////////////////////////////////////////////////
-	if (core::inputDevice::isKeyPressed('B')) {
+	if (core::inputDevice::isKeyPressed(core::inputDevice::Key::B)) {
 		state = State::PlaylistList;
 		app->musicPlayer.setDrawnPlaylist("");
 	}
@@ -115,17 +124,15 @@ void PlaylistState::handleEvent()
 	{
 		playlistList.handleEvent();
 
-		if (playlistList.hasFocus() && core::inputDevice::isKeyPressed(VK_RETURN))
+		if (playlistList.hasFocus() && core::inputDevice::isKeyPressed(core::inputDevice::Key::Enter))
 		{
-			playlistList.selectHoveredItem();
-			std::string selectedPlaylistName = playlistList.getSelectedIndex() == core::DrawableList::NOINDEX ? "" : playlistList.getSelected()[0] + ".pl";
+			// Clear the key state, so that musicPlayer does not automatically play the first / hovered track.
+			core::inputDevice::clearKeyState(core::inputDevice::Key::Enter);
+
+			// Note: Hovered item is here not selected, because only playing playlists are selected.
+			std::string selectedPlaylistName = playlistList.getHoverIndex() == core::DrawableList::NOINDEX ? "" : playlistList.getHover()[0] + ".pl";
 			state = State::Playlist;
 			app->musicPlayer.setDrawnPlaylist(selectedPlaylistName);
-			
-			// Update config:
-			std::map<std::wstring, std::wstring> config = core::getConfig("data/config.dat");
-			config[L"defaultPlaylist"] = std::to_wstring(playlistList.getSelectedIndex());
-			core::setConfig("data/config.dat", config);
 		}
 	}
 
@@ -144,8 +151,13 @@ void PlaylistState::draw()
 		playlistList.draw();
 	}
 	else {
-		std::string backInfo = app->isDrawKeyInfo ? " <[B]ack"s : " <";
-		std::cout << core::Text(backInfo, core::Color::White) << core::endl();
+		std::string backSymbol = " <";
+		std::string backKeyInfo = app->isDrawKeyInfo ? "[B]" : "";
+		std::string locationInfo = " Playlist > " + playlistList.getHover()[0] + "";
+
+		std::cout << core::Text(backSymbol, core::Color::Bright_White) << core::Text(backKeyInfo, core::Color::Gray)
+			<< core::Text(locationInfo, core::Color::Gray)
+			<< core::endl(2);
 		app->musicPlayer.draw();
 	}
 

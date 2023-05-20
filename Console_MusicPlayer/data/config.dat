@@ -1,5 +1,0 @@
-defaultPlaylist = 7
-isPlaylistShuffled = false
-musicDirs = "D:/Data/Music/", "C:/Users/Jonas/Music/", "music/"
-playlistLoop = all
-totalRuntime = nolimit

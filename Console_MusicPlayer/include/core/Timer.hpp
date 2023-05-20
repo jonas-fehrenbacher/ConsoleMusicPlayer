@@ -15,12 +15,18 @@ namespace core
 		Timer(Timer&&) = delete;
 		~Timer();
 
-		// The clock will resume if it was stopped.
+		/** Restart the timer. This is the default behaviour when an Timer is created. */
 		Time restart();
+		/** Resume paused timer. */
 		void resume();
+		/** Pause timer, so that its elapsed time stored and it can be resumed. */
+		void pause();
+		/** Stop timer: Time is 0ns - use restart() to start timer. */
 		void stop();
+		/** Has no effect on stopped timer. */
 		void add(Time time);
 		Time getElapsedTime() const;
+		bool isPaused() const;
 		bool isStopped() const;
 	private:
 		Duration          stoppedTime;

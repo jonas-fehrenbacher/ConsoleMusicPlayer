@@ -15,18 +15,19 @@
 #include <iostream>
 #include <thread>
 
-intern std::vector<fs::path> getMusicDirsFromConfig();
+intern std::vector<fs::path> getMusicDirsFromConfig(fs::path configFilePath);
 intern App::Style getStyle();
 intern void loadingScreen(std::atomic_bool* isInitializing, App::LoadingScreenStyle style);
 App::App() :
+	configFilePath("data/config.properties"),
 	messageBus(),
 	isRunning(true),
-	activeState(nullptr),
+	activeState(),
 	trackState(this),
 	playlistState(this),
 	directoryState(this),
 	drawTimer(),
-	musicDirs(), // do not initialize here, because maybe config.dat does not exist.
+	musicDirs(), // do not initialize here, because maybe config.properties does not exist.
 	style(),
 	isDrawKeyInfo(true)
 {
@@ -117,48 +118,66 @@ App::App() :
 	if (!fs::exists("data/")) {
 		fs::create_directories("data/");
 	}
-	// Create data/config.dat:
-	if (!fs::exists("data/config.dat")) {
+	// Create data/config.properties:
+	bool isConfigValid = true;
+	if (fs::exists(configFilePath)) {
+		std::map<std::wstring, std::wstring> config = core::getConfig(configFilePath);
+		if (config.count(L"isPlaylistShuffled") == 0) isConfigValid = false;
+		if (config.count(L"musicDirs") == 0)          isConfigValid = false;
+		if (config.count(L"playlistLoop") == 0)       isConfigValid = false;
+		if (config.count(L"totalRuntimeInSec") == 0)  isConfigValid = false;
+		if (!isConfigValid) {
+			core::log("Warning: configuration file is not valid!");
+			//__debugbreak();
+		}
+	}
+	if (!fs::exists(configFilePath) || !isConfigValid) {
 		std::string username = core::getUsername();
 		fs::path defaultMusicDir = "C:/Users/" + username + "/Music";
 		if (username.empty() || !fs::exists(defaultMusicDir)) {
 			defaultMusicDir = "";
 		}
-		ofs.open("data/config.dat");
-		ofs << "defaultPlaylist = 0\nisPlaylistShuffled = false\nmusicDirs = " << defaultMusicDir << "\nplaylistLoop = none\ntotalRuntime = nolimit";
+		ofs.open(configFilePath);
+		//
+		ofs << "# Music player configuration file.\n\n"
+			<< "# Specify if the playlist should be shuffled.\n"
+			<< "isPlaylistShuffled = false\n\n"
+			<< "# Specify in which directories the music player should search for music. Syntax: musicDirs = \"path1/\", ..., \"pathN/\"\n"
+			<< "musicDirs = " << defaultMusicDir << "\n\n"
+			<< "# Specify the playlist loop behaviour, which can be: 'none', 'one', 'all'\n"
+			<< "playlistLoop = none\n\n"
+			<< "# Specify after which time the playlist should stop playing. Specify 'nolimit' to ignore this or the time in seconds.\n"
+			<< "totalRuntimeInSec = nolimit";
 		ofs.close();
 		// "D:/Data/Music/", "C:/Users/Jonas/Music/", "music/"
 	}
+	std::map<std::wstring, std::wstring> config = core::getConfig("data/config.properties");
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Init music dirs
 	///////////////////////////////////////////////////////////////////////////////
 	// Set music directories:
-	// Note set this after config.dat is created and before State::init() is called.
-	musicDirs = getMusicDirsFromConfig();
-
-	///////////////////////////////////////////////////////////////////////////////
-	// Get config
-	///////////////////////////////////////////////////////////////////////////////
-	// Do not do this in the constructor, because in App::App I need to check if the directory exists.
-	std::map<std::wstring, std::wstring> config = core::getConfig("data/config.dat");
-	if (config.count(L"defaultPlaylist") == 0) {
-		core::log("Error: defaultPlaylist not found in config.dat");
-		__debugbreak();
-	}
+	// Note set this after config.properties is created and before State::init() is called.
+	musicDirs = getMusicDirsFromConfig(configFilePath);
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Init music player
 	///////////////////////////////////////////////////////////////////////////////
 	core::Time musicPlayer_sleepTime = 0s;
-	if (config[L"totalRuntime"] != L"nolimit") {
-		musicPlayer_sleepTime = core::Seconds(std::stoi(config[L"totalRuntime"]));
+	if (config[L"totalRuntimeInSec"] != L"nolimit") {
+		musicPlayer_sleepTime = core::Seconds(std::stoi(config[L"totalRuntimeInSec"]));
 	}
 	int musicPlayer_options =
 		(config[L"isPlaylistShuffled"] == L"true" ? core::MusicPlayer::Shuffle : 0) |
 		(config[L"playlistLoop"] == L"none" ? 0 : (config[L"playlistLoop"] == L"one" ? core::MusicPlayer::LoopOne : core::MusicPlayer::LoopAll)) |
 		core::MusicPlayer::FadeOut;
-	musicPlayer.init(musicDirs, style.drawableList, musicPlayer_options, musicPlayer_sleepTime);
+	musicPlayer.init(musicDirs, style.drawableList, configFilePath, musicPlayer_options, musicPlayer_sleepTime);
+	// Add all playlists:
+	for (auto& it : fs::directory_iterator("data")) {
+		if (it.is_regular_file() && it.path().extension() == ".pl") {
+			musicPlayer.addPlaylist(it.path().u8string());
+		}
+	}
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Init rest
@@ -173,8 +192,7 @@ App::App() :
 	// Init states
 	///////////////////////////////////////////////////////////////////////////////
 	// ..after folder and files are created:
-	activeState = &trackState;
-	activeState->init();
+	activeState.set(&trackState);
 
 	// Wait for thread:
 	//std::this_thread::sleep_for(10s);
@@ -278,7 +296,7 @@ intern void loadingScreen(std::atomic_bool* isInitializing, App::LoadingScreenSt
 	}
 }
 
-intern std::vector<fs::path> getMusicDirsFromConfig()
+intern std::vector<fs::path> getMusicDirsFromConfig(fs::path configFilePath)
 {
 	// Set music directories: 
 	// std::filesystem::weakly_canonical(): convert to absolute path that has no dot, dot-dot elements or symbolic links in its generic format representation.
@@ -291,7 +309,7 @@ intern std::vector<fs::path> getMusicDirsFromConfig()
 	//   std::cout << "it1: " << *it1 << ", it2: " << *it2 << "\n"; // it1: "test", it2: "Loblieder"
 	// - IMPORTANT: This only works if there is no trailing slash (/).
 	//   std::path::iterator iterates over each directory and with an trailing slash there is probably an additional entry.
-	std::vector<fs::path> musicDirs = core::getConfigPathArr(core::getConfig("data/config.dat")[L"musicDirs"]);
+	std::vector<fs::path> musicDirs = core::getConfigPathArr(core::getConfig(configFilePath)[L"musicDirs"]);
 	// Erase all no-directory entries:
 	for (auto it = musicDirs.begin(); it != musicDirs.end();) {
 		if (!fs::exists(*it) || !fs::is_directory(*it)) it = musicDirs.erase(it);
@@ -330,7 +348,7 @@ intern std::vector<fs::path> getMusicDirsFromConfig()
 	}
 
 	// Set default music directory:
-	// Should not be added automatically, because user should control what he wants. I add this only if config.dat does not exist.
+	// Should not be added automatically, because user should control what he wants. I add this only if config file does not exist.
 	//std::string username = core::getUsername();
 	//if (!username.empty()) {
 	//	fs::path defaultMusicDir = "C:/Users/" + username + "/Music";
@@ -383,7 +401,7 @@ void App::mainLoop()
 
 void App::update()
 {
-	activeState->update();
+	activeState.update();
 	messageBus.update();
 	// maybe update musicDirs (optional)
 	core::inputDevice::update();
@@ -395,28 +413,28 @@ void App::handleEvents()
 	///////////////////////////////////////////////////////////////////////////////
 	// Exit
 	///////////////////////////////////////////////////////////////////////////////
-	if (core::inputDevice::isKeyPressed(VK_ESCAPE)) {
+	if (core::inputDevice::isKeyPressed(core::inputDevice::Key::Escape)) {
 		isRunning = false;
 	}
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Lock
 	///////////////////////////////////////////////////////////////////////////////
-	if (core::inputDevice::isKeyPressed(VK_F12, true)) {
+	if (core::inputDevice::isKeyPressed(core::inputDevice::Key::F12, true)) {
 		core::inputDevice::lock(!core::inputDevice::isLocked());
 	}
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Hide key
 	///////////////////////////////////////////////////////////////////////////////
-	if (core::inputDevice::isKeyPressed('K')) {
+	if (core::inputDevice::isKeyPressed(core::inputDevice::Key::K)) {
 		isDrawKeyInfo = !isDrawKeyInfo;
 	}
 
 	///////////////////////////////////////////////////////////////////////////////
 	// States
 	///////////////////////////////////////////////////////////////////////////////
-	activeState->handleEvent();
+	activeState.handleEvents();
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Music player
@@ -426,23 +444,22 @@ void App::handleEvents()
 
 void App::draw()
 {
-	activeState->draw();
+	activeState.draw();
 	//musicPlayer.draw();
 }
 
 void App::onMessage(core::Message message)
 {
 	if (message.id == core::MessageID::CONSOLE_RESIZE) {
+		//system("CLS");
 		core::console::hideCursor(); // is required, because somehow cursor is shown again after reset
 		musicPlayer.onConsoleResize();
 	}
 
 	if (message.id == Message::NAVBAR_OPTION_SELECTED) {
 		NavBar::Option option = *static_cast<NavBar::Option*>(message.userData);
-		activeState->terminate();
-		if (option == NavBar::Option::AllMusic)         activeState = &trackState;
-		else if (option == NavBar::Option::Playlists)   activeState = &playlistState;
-		else if (option == NavBar::Option::Directories) activeState = &directoryState;
-		activeState->init();
+		if (option == NavBar::Option::AllMusic)         activeState.set(&trackState);
+		else if (option == NavBar::Option::Playlists)   activeState.set(&playlistState);
+		else if (option == NavBar::Option::Directories) activeState.set(&directoryState);
 	}
 }

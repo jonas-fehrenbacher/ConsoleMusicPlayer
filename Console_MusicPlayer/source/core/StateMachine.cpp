@@ -13,47 +13,43 @@ core::State::~State()
 
 }
 
-void core::StateMachine::add(State* state)
+core::ActiveState::ActiveState() :
+	data(nullptr)
 {
-	states.push_back(state);
-	state->init();
+
 }
 
-void core::StateMachine::remove(State* state)
+void core::ActiveState::set(State* state)
 {
-	state->terminate();
-	states.erase(std::remove(states.begin(), states.end(), state), states.end());
-}
-
-void core::StateMachine::update()
-{
-	PROFILE_FUNC
-
-	for (State* state : states) {
-		if (state->isUpdating) {
-			state->update();
-		}
+	if (data) {
+		data->terminate();
+	}
+	data = state;
+	if (state) {
+		data->init();
 	}
 }
 
-void core::StateMachine::handleEvent()
+void core::ActiveState::update()
 {
-	PROFILE_FUNC
-
-	for (State* state : states) {
-		if (state->isUpdating) {
-			state->handleEvent();
-		}
+	PROFILE_FUNC;
+	if (data->isUpdating) {
+		data->update();
 	}
 }
 
-void core::StateMachine::draw()
+void core::ActiveState::handleEvents()
 {
-	PROFILE_FUNC
+	PROFILE_FUNC;
+	if (data->isUpdating) {
+		data->handleEvent();
+	}
+}
 
-	for (State* state : states) {
-		if (state->isDrawing) {
-			state->draw();
-		}
+void core::ActiveState::draw()
+{
+	PROFILE_FUNC;
+	if (data->isDrawing) {
+		data->draw();
 	}
 }

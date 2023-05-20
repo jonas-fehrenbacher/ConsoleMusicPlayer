@@ -20,7 +20,7 @@ void NavBar::handleEvents()
 	///////////////////////////////////////////////////////////////////////////////
 	// Jump to navigation bar
 	///////////////////////////////////////////////////////////////////////////////
-	if (core::inputDevice::isKeyPressed('O')) {
+	if (core::inputDevice::isKeyPressed(core::inputDevice::Key::O)) {
 		hover = Option::First;
 		app->messageBus.send(Message::NAVBAR_SHORTCUT_TRIGGERED); // Every state needs to listen to this and set themselves off focus.
 		// Alternative: set a flag 'bool isShortcutTriggered()' - reset this if 'O' is not pressed.
@@ -29,7 +29,7 @@ void NavBar::handleEvents()
 	///////////////////////////////////////////////////////////////////////////////
 	// Navigation bar slection
 	///////////////////////////////////////////////////////////////////////////////
-	if (isInsideNavBar() && core::inputDevice::isKeyPressed(VK_RETURN))
+	if (isInsideNavBar() && core::inputDevice::isKeyPressed(core::inputDevice::Key::Enter))
 	{
 		selected = hover;
 		hover    = Option::None; // Jump into the option

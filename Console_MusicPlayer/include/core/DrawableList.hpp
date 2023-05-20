@@ -42,6 +42,7 @@ namespace core
 
 			int   length;
 			Color color;
+			bool  alignRight;        //< Aligns all column items to the right, which is only doable if length == LARGEST_ITEM.
 			bool  isVisible;         //< Only visible columns are drawn. Useful if you want to use an filter or don't want to show all entries. If this changes 'calcColumnRawLength' needs to be called!
 			bool  hasEmptySpace;     //< Coulmn gets all available empty space.
 			bool  isLengthInPercent; //< Percentage of the still available empty space in the list. Otherwise length is in character count.
@@ -68,6 +69,7 @@ namespace core
 		void handleEvent();
 		void draw();
 
+		/** Use DrawableList::NOINDEX to select nothing. */
 		void select(int index);
 		/* ScrollableList does not selected elements, the user has to do this. */
 		void selectHoveredItem();
@@ -78,12 +80,13 @@ namespace core
 		void loseFocus();
 		void gainFocus();
 		void scrollToTop();
-		size_t size();
+		size_t size() const;
 		/** returns -1 if nothing is selected */
-		size_t getSelectedIndex();
-		Row getSelected();
-		size_t getHoverIndex();
-		Row getHover();
+		size_t getSelectedIndex() const;
+		Row getSelected() const;
+		size_t getHoverIndex() const;
+		Row getHover() const;
+		const std::vector<Row>& get() const;
 		/* return length of the drawn box in character column count. Note that this ignores the tab and Scrollbar - its just the border. */
 		int getDrawSize() const;
 		int getPosX() const;

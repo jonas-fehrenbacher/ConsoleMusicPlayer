@@ -15,11 +15,11 @@ namespace core
 	 * Music player has playlists and plays them.
 	 * Usage:
 	 * - First you have to call MusicPlayer::init(). This loads all music sets everything up.
-	 * - Afterwards you can add playlists with MusicPlayer::addPlaylist(). Note there is a default playlist called "all" which contains all found tracks.
+	 * - Afterwards you can add playlists with MusicPlayer::addPlaylist(). Note there is a default playlist called ALL_PLAYLIST_NAME which contains all found tracks.
 	 *   The playlist file contains in each line a music filename (helloWorld.mp3) which is searched for in all directories specified in 'musicDirPaths'.
 	 * - To run a playlist use playPlaylist(name). The playlist name is the filename without its extention - its stem name. Or just use Options::AutoStart
-	 *   to automatically start the "all" playlist when initializing.
-	 * - By default the "all" playlist is drawn. To draw something else use MusicPlayer::setDrawnPlaylist(). This is not done automatically, because
+	 *   to automatically start the ALL_PLAYLIST_NAME playlist when initializing.
+	 * - By default the ALL_PLAYLIST_NAME playlist is drawn. To draw something else use MusicPlayer::setDrawnPlaylist(). This is not done automatically, because
 	 *   a playlist can be played, while the user looks at a different playlist.
 	 * - MusicPlayer can even handle events. TODO: Select events and its key bindings.
 	 */
@@ -59,8 +59,9 @@ namespace core
 		core::Text skipReport;
 		core::Text volumeReport;
 
-		void init(std::vector<fs::path> musicDirPaths, DrawableList::Style style, int options = 0, Time sleepTime = 0ns);
+		void init(std::vector<fs::path> musicDirPaths, DrawableList::Style style, fs::path configFilePath, int options = 0, Time sleepTime = 0ns);
 		void terminate();
+		/** Does nothing if playlist is already added. */
 		void addPlaylist(fs::path playlistFilePath);
 		void update();
 		void handleEvents();
@@ -111,10 +112,8 @@ namespace core
 		std::vector<Playlist>          playlists;
 		Playlist*                      activePlaylist; //< currently active playlist
 		Playlist*                      drawnPlaylist; //< playlist which is drawn.
-							           
 		std::vector<int>               playingOrder; //< specifies the playing order from the "music" in Playlist::musicIndexList; 0..musicIndexList.size()
 		int                            playingOrder_currentIndex; // index of current music in playingOrder
-		
 		core::Timer                    trackPlaytime;
 		core::Time                     sleepTime; //< user can define how long the player should play, when it should put itself to sleep.
 		core::Timer                    playtime; //< started with the first track being played 
@@ -126,6 +125,7 @@ namespace core
 		core::Timer                    cooldownSkipReport;
 		core::Timer                    cooldownVolumeReport;
 		core::DrawableList::InitInfo   drawableList_initInfo;
+		fs::path                       configFilePath;
 
 		void addMusic(std::filesystem::path musicFilePath);
 		/* return playing music index from Playlist::musicIndexList */
@@ -134,5 +134,6 @@ namespace core
 		int getPlayingMusicIndex() const;
 		void play(bool next);
 		void skipTime(Time time);
+		void updateListSelection();
 	};
 }

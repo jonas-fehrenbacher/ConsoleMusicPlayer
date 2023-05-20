@@ -9,9 +9,9 @@
 #include <cassert>
 #include <Windows.h>
 
-const std::string core::MusicPlayer::ALL_PLAYLIST_NAME = "all.pl";
+const std::string core::MusicPlayer::ALL_PLAYLIST_NAME = "__all8756234875.pl"; //< should be a name nobody chooses for his playlists.
 
-void core::MusicPlayer::init(std::vector<fs::path> musicDirPaths, DrawableList::Style style, int options /*= 0*/, Time sleepTime /*= 0ns*/)
+void core::MusicPlayer::init(std::vector<fs::path> musicDirPaths, DrawableList::Style style, fs::path configFilePath, int options /*= 0*/, Time sleepTime /*= 0ns*/)
 {
 	///////////////////////////////////////////////////////////////////////////////
 	// Reset all values
@@ -34,6 +34,7 @@ void core::MusicPlayer::init(std::vector<fs::path> musicDirPaths, DrawableList::
 	cooldownSkipReport;
 	cooldownVolumeReport;
 	drawableList_initInfo = {};
+	this->configFilePath = configFilePath;
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Set drawable lists layout
@@ -43,18 +44,21 @@ void core::MusicPlayer::init(std::vector<fs::path> musicDirPaths, DrawableList::
 		core::DrawableList::Column column;
 		column.length            = core::DrawableList::Column::LARGEST_ITEM;
 		column.color             = core::Color::Gray;
+		column.alignRight        = true;
 		column.isVisible         = true;
 		column.hasEmptySpace     = false;
 		column.isLengthInPercent = false;
 		listInitInfo_columnLayout.push_back(column);
 		column.length            = 0;
 		column.color             = core::Color::Bright_White;
+		column.alignRight        = false;
 		column.isVisible         = true;
 		column.hasEmptySpace     = true;
 		column.isLengthInPercent = false;
 		listInitInfo_columnLayout.push_back(column);
 		column.length            = core::DrawableList::Column::LARGEST_ITEM;
 		column.color             = core::Color::Aqua;
+		column.alignRight        = true;
 		column.isVisible         = true;
 		column.hasEmptySpace     = false;
 		column.isLengthInPercent = false;
@@ -165,6 +169,13 @@ void core::MusicPlayer::addPlaylist(fs::path playlistFilePath)
 		system("PAUSE");
 	}
 
+	for (Playlist& playlist : playlists) {
+		if (playlist.name == playlistFilePath.filename().string()) {
+			// ..playlist is already set
+			return;
+		}
+	}
+
 	///////////////////////////////////////////////////////////////////////////////
 	// Load music file names
 	///////////////////////////////////////////////////////////////////////////////
@@ -254,6 +265,7 @@ void core::MusicPlayer::update()
 	///////////////////////////////////////////////////////////////////////////////
 	if (activePlaylist && isStopped()) {
 		play(true);
+		updateListSelection();
 	}
 
 	///////////////////////////////////////////////////////////////////////////////
@@ -333,57 +345,83 @@ void core::MusicPlayer::update()
 	}
 }
 
+void core::MusicPlayer::updateListSelection()
+{
+	if (activePlaylist)
+	{
+		// ..a track is playing - select it everywhere
+		const std::string playingMusicTitle = getPlayingMusicInfo().title;
+		for (Playlist& playlist : playlists) {
+			for (size_t i = 0; i < playlist.drawableList.get().size(); ++i) {
+				if (playlist.drawableList.get()[i][0] == playingMusicTitle) {
+					playlist.drawableList.select(i);
+					break;
+				}
+			}
+		}
+		
+	}
+	else
+	{
+		// ..no playlist is selected / nothing is playing - remove all selections
+		for (Playlist& playlist : playlists) {
+			playlist.drawableList.select(DrawableList::NOINDEX);
+		}
+	}
+}
+
 void core::MusicPlayer::handleEvents()
 {
 	// Enter key (Select item):
-	if (drawnPlaylist && drawnPlaylist->drawableList.hasFocus() && core::inputDevice::isKeyPressed(VK_RETURN))
+	if (drawnPlaylist && drawnPlaylist->drawableList.hasFocus() && core::inputDevice::isKeyPressed(inputDevice::Key::Enter))
 	{
 		drawnPlaylist->drawableList.selectHoveredItem();
 		int playlistMusicIndex = (int)drawnPlaylist->drawableList.getSelectedIndex();
 		if (activePlaylist == drawnPlaylist) {
 			playingOrder_currentIndex = playlistMusicIndex - 1; // -1 because play(true) will increase index by 1
 			play(true); // play next
+			updateListSelection();
 		}
 		else {
-			playPlaylist(drawnPlaylist->name, playlistMusicIndex);
+			playPlaylist(drawnPlaylist->name, playlistMusicIndex); // calls updateListSelection();
 		}
 	}
 
 	// Up / Down key (or music finished):
 	if (!isStopped()) {
-		if (inputDevice::isKeyPressed(VK_UP)) {
+		if (inputDevice::isKeyPressed(inputDevice::Key::Up)) {
 			play(true); // next
 		}
-		else if (inputDevice::isKeyPressed(VK_DOWN)) {
+		else if (inputDevice::isKeyPressed(inputDevice::Key::Down)) {
 			play(false); // previous
 		}
 	}
 
 	// R-Key
-	if (inputDevice::isKeyPressed('R')) {
+	if (inputDevice::isKeyPressed(inputDevice::Key::R)) {
 		if (isShuffled()) resetShuffle();
 		else shuffle();
 
 		// Update config:
-		std::map<std::wstring, std::wstring> config = core::getConfig("data/config.dat");
+		std::map<std::wstring, std::wstring> config = core::getConfig(configFilePath);
 		config[L"isPlaylistShuffled"] = isShuffled() ? L"true" : L"false";
-		core::setConfig("data/config.dat", config);
+		core::setConfig(configFilePath, config);
 	}
 
 	// L-Key:
-	if (inputDevice::isKeyPressed('L')) { // Loop key
+	if (inputDevice::isKeyPressed(inputDevice::Key::L)) { // Loop key
 		// ..select one of 3 modi
 		replayStatus = static_cast<Replay>((int)replayStatus + 1);
 		replayStatus = static_cast<Replay>((int)replayStatus % (int)Replay::Count); // wrap around
 
 		// Update config:
-		std::map<std::wstring, std::wstring> config = core::getConfig("data/config.dat");
+		std::map<std::wstring, std::wstring> config = core::getConfig(configFilePath);
 		config[L"playlistLoop"] = replayStatus == Replay::None ? L"none" : (replayStatus == Replay::One ? L"one" : L"all");
-		core::setConfig("data/config.dat", config);
+		core::setConfig(configFilePath, config);
 	}
 
 	// Left-Key:
-	if (!isStopped() && inputDevice::isKeyPressed(VK_LEFT))
+	if (!isStopped() && inputDevice::isKeyPressed(inputDevice::Key::Left))
 	{
 		if (getPlayingMusicElapsedTime().asSeconds() < 5.f)
 		{
@@ -402,7 +440,7 @@ void core::MusicPlayer::handleEvents()
 	}
 
 	// Right-Key:
-	if (!isStopped() && inputDevice::isKeyPressed(VK_RIGHT))
+	if (!isStopped() && inputDevice::isKeyPressed(inputDevice::Key::Right))
 	{
 		if (getPlayingMusicElapsedTime().asSeconds() > getPlayingMusicInfo().duration.asSeconds() - 5.f)
 		{
@@ -423,7 +461,7 @@ void core::MusicPlayer::handleEvents()
 	}
 
 	// +-Key:
-	if (inputDevice::isKeyPressed(VK_OEM_PLUS))
+	if (inputDevice::isKeyPressed(inputDevice::Key::Plus))
 	{
 		if (getVolume() <= 95)
 		{
@@ -440,7 +478,7 @@ void core::MusicPlayer::handleEvents()
 	}
 
 	// --Key:
-	if (inputDevice::isKeyPressed(VK_OEM_MINUS))
+	if (inputDevice::isKeyPressed(inputDevice::Key::Minus))
 	{
 		if (getVolume() >= 5)
 		{
@@ -457,7 +495,7 @@ void core::MusicPlayer::handleEvents()
 	}
 
 	// P-Key:
-	if (!isStopped() && inputDevice::isKeyPressed('P'))
+	if (!isStopped() && inputDevice::isKeyPressed(inputDevice::Key::P))
 	{
 		if (isPlaying())
 		{
@@ -534,6 +572,12 @@ void core::MusicPlayer::playPlaylist(std::string playlistName, int startTrack /*
 	///////////////////////////////////////////////////////////////////////////////
 	playingOrder_currentIndex += playingOrder_currentIndex == -1 ? 0 : -1; // to play selected track - reduce this before playing next track.
 	play(true);
+	playtime.restart();
+
+	///////////////////////////////////////////////////////////////////////////////
+	// Update list selection
+	///////////////////////////////////////////////////////////////////////////////
+	updateListSelection();
 }
 
 void core::MusicPlayer::play(bool next)
@@ -557,8 +601,8 @@ void core::MusicPlayer::play(bool next)
 	{
 		// ..playlist end reached
 		trackPlaytime.restart();
-		trackPlaytime.stop();
-		playtime.stop();
+		trackPlaytime.pause();
+		playtime.pause();
 		activePlaylist = nullptr;
 		playingOrder_currentIndex = 0;
 		playingOrder.clear();
@@ -609,7 +653,7 @@ void core::MusicPlayer::resume()
 void core::MusicPlayer::pause()
 {
 	Mix_PauseMusic();
-	trackPlaytime.stop();
+	trackPlaytime.pause();
 }
 
 void core::MusicPlayer::stop()

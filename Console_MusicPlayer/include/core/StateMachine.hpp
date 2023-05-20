@@ -19,15 +19,17 @@ namespace core
         ~State();
     };
 
-    class StateMachine 
+    /** Useful if there can be only one state active at a time. */
+    class ActiveState 
     {
     public:
-        std::vector<State*> states;
-
-        void add(State* state);
-        void remove(State* state);
+        ActiveState();
+        /** Calls automatically State::terminate() on the old state and State::init() on the new one. Use nullptr to remove the current state. */
+        void set(State* state);
         void update();
-        void handleEvent();
+        void handleEvents();
         void draw();
+    private:
+        State* data;
     };
 }

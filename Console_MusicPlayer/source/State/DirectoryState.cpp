@@ -75,7 +75,7 @@ void DirectoryState::handleEvent()
 {
 	list.handleEvent();
 
-	if (list.hasFocus() && core::inputDevice::isKeyPressed(VK_RETURN))
+	if (list.hasFocus() && core::inputDevice::isKeyPressed(core::inputDevice::Key::Enter))
 	{
 		list.selectHoveredItem();
 	}

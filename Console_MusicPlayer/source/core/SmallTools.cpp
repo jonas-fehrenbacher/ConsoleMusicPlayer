@@ -100,19 +100,19 @@ std::string core::getTimeStr(core::Time time, core::Time limit /*= 0ns*/)
 	bool hasHours = false;
 	bool hasMinutes = false;
 	std::string timeStr = "";
-	if (static_cast<int>(limit.asHours()) > 0) {
+	if (limit >= 1h) {
 		int hours = (int)time.asHours();
 		timeStr += std::to_string(hours) + ":";
 		time -= core::Hours((int)time.asHours());
 		hasHours = true;
 	}
-	if (static_cast<int>(limit.asMinutes()) > 0) {
+	if (limit >= 1min || limit < 1min) { // Must start at least with '0:'
 		int minutes = (int)time.asMinutes();
 		timeStr += (hasHours && minutes < 10 ? "0" : "") + std::to_string(minutes) + ":";
 		time -= core::Minutes((int)time.asMinutes());
 		hasMinutes = true;
 	}
-	if (static_cast<int>(limit.asSeconds()) > 0) { // note: don't do time > 0s, because an 1min song has at this point time==0
+	if (limit >= 1s) { // note: don't do time > 0s, because an 1min song has at this point time==0
 		int seconds = (int)time.asSeconds();
 		timeStr += (hasMinutes && seconds < 10 ? "0" : "") + std::to_string(seconds);
 		time -= core::Seconds((int)time.asSeconds());
@@ -240,11 +240,38 @@ bool core::hasFlag(int flag, int flagList)
 	return flag == (flag & flagList);
 }
 
+intern std::wstring getComment(const std::wstring& commentVarName, const std::map<std::wstring, std::wstring>& config)
+{
+	// __comment<name><num>
+
+	std::wstring comment = L"";
+	std::vector<std::pair<int, std::wstring>> commentLines;
+	for (auto& [name, value] : config) {
+		std::wstring commentName = L"__comment" + commentVarName;
+		if (name.substr(0, commentName.length()) == commentName && iswdigit(name.at(commentName.length()))) {
+			int number = std::stoi(name.substr(commentName.length()));
+			commentLines.push_back(std::make_pair(number, value));
+		}
+	}
+	std::sort(commentLines.begin(), commentLines.end(), [](std::pair<int, std::wstring>& a, std::pair<int, std::wstring>& b) {
+		return a.first < b.first;
+		});
+	for (auto& commentLine : commentLines) {
+		comment += commentLine.second + L"\n";
+	}
+	return comment;
+}
+
 void core::setConfig(std::filesystem::path path, const std::map<std::wstring, std::wstring>& config)
 {
 	std::wofstream ofs(path, std::ios::out);
+	ofs << getComment(L"", config); // print first comments
 	for (auto& [name, value] : config) {
-		ofs << name << " = " << value << "\n";
+		if (name.substr(0, std::string("__comment").length()) == L"__comment") {
+			continue;
+		}
+
+		ofs << name << " = " << value << "\n" << getComment(name, config);
 	}
 	ofs.close();
 }
@@ -256,8 +283,19 @@ std::map<std::wstring, std::wstring> core::getConfig(std::filesystem::path path)
 	ifs.imbue(std::locale(std::locale::empty(), new std::codecvt_utf8<wchar_t>));
 	std::wstring line;
 
+	size_t commentCount = 0;
+	std::wstring lastItemName = L""; // to keep track where comment belogs to (std::map does not maintain insertion order)
 	while (std::getline(ifs, line))
 	{
+		// Store comments and empty lines:
+		size_t firstCharPos = line.find_first_not_of(' ');
+		if (firstCharPos == std::string::npos || (firstCharPos != std::string::npos && line[firstCharPos] == '#')) {
+			// ..comment line
+			config.insert(std::pair<std::wstring, std::wstring>(L"__comment" + lastItemName + std::to_wstring(commentCount), line)); // __comment<name><num>
+			++commentCount;
+			continue;
+		}
+
 		// Note: Spaces may not be removed on 'line', because strings can contain spaces (e.g. paths).
 		std::wstring varName = line.substr(0, line.find('='));
 		// remove spaces:
@@ -268,6 +306,10 @@ std::map<std::wstring, std::wstring> core::getConfig(std::filesystem::path path)
 		for (; line[varValueIndex] == ' '; ++varValueIndex);
 		std::wstring varValue = line.substr(varValueIndex);
 		config.insert(std::pair<std::wstring, std::wstring>(varName, varValue));
+
+		// Update comment info:
+		lastItemName = varName;
+		commentCount = 0;
 	}
 	ifs.close();
 
