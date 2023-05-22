@@ -301,8 +301,8 @@ void core::DrawableList::draw()
 			//   1. scrollbarOriginPos: Scrollbar position if it would be 1 character in size (is the center on a larger scrollbar).
 			//   2. scrollbarSize: How large the scrollbar needs to be.
 			//   3. scrollbarTop_itemIndex, scrollbarBottom_itemIndex: Start draw position and end draw position on the y axis.
-			int middleDrawnItemIndex = round(startDrawIndex + sizeInside.y / 2.f); // using 'hover' is not that good if there are few items.
-			float scrollbarPosFactor = middleDrawnItemIndex / (float)list.size(); // 0..1
+			int middleDrawnItemIndex = round(startDrawIndex + sizeInside.y / 2.f); // using 'hover' is a bit of a strange behaviour comparedc to websites, but 'middleDrawnItemIndex' causes sometimes the scrollbar to not completly scroll down..
+			float scrollbarPosFactor = hover / (float)list.size(); // 0..1; middleDrawnItemIndex or hover
 			float scrollbarOriginPosRaw = (drawnItemCount - 1) * scrollbarPosFactor; // 0..drawnItemCount-1; Position if scrollbarSize==1
 			int scrollbarOriginPos = (startDrawIndex + scrollbarOriginPosRaw) > list.size() / 2.f ? round(scrollbarOriginPosRaw) : scrollbarOriginPosRaw;
 			// (sizeInside.y-1): This is neccessray, because we want 'sizeInside.y' positions (0..MDI-1) and not 'sizeInside.y+1' positions.
@@ -322,7 +322,7 @@ void core::DrawableList::draw()
 					scrollbarTop_itemIndex = 0; // TODO: this may not be triggered, but is..
 				scrollbarBottom_itemIndex = drawnItemCount - 1;
 			}
-			assert(scrollbarTop_itemIndex >= 0 && scrollbarBottom_itemIndex <= drawnItemCount - 1);
+			//assert(scrollbarTop_itemIndex >= 0 && scrollbarBottom_itemIndex <= drawnItemCount - 1);
 
 			if (i >= startDrawIndex + scrollbarTop_itemIndex && i <= startDrawIndex + scrollbarBottom_itemIndex) {
 				

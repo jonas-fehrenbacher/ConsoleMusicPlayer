@@ -4,9 +4,9 @@
 #include <vector>
 #include <functional>
 
-/*
-	Note SDL2 can not be used, because it requires a window which is on focus, so it does not work with console applications.
-*/
+/**
+ * Note SDL2 can not be used, because it requires a window which is on focus, so it does not work with console applications.
+ */
 
 namespace core::inputDevice
 {

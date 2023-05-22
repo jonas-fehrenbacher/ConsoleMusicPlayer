@@ -2,6 +2,7 @@
 #include "core/SmallTools.hpp"
 #include "core/Profiler.hpp"
 #include "core/InputDevice.hpp"
+#include "App.hpp"
 #include <filesystem>
 #include <fstream>
 #include <random>
@@ -11,13 +12,13 @@
 
 const std::string core::MusicPlayer::ALL_PLAYLIST_NAME = "__all8756234875.pl"; //< should be a name nobody chooses for his playlists.
 
-void core::MusicPlayer::init(std::vector<fs::path> musicDirPaths, DrawableList::Style style, fs::path configFilePath, int options /*= 0*/, Time sleepTime /*= 0ns*/)
+void core::MusicPlayer::init(App* app, int options /*= 0*/, Time sleepTime /*= 0ns*/)
 {
 	///////////////////////////////////////////////////////////////////////////////
 	// Reset all values
 	///////////////////////////////////////////////////////////////////////////////
+	this->app = app;
 	music = nullptr;
-	this->musicDirPaths = musicDirPaths;
 	musicInfoList.clear();
 	playlists.clear();
 	activePlaylist = nullptr;
@@ -34,7 +35,6 @@ void core::MusicPlayer::init(std::vector<fs::path> musicDirPaths, DrawableList::
 	cooldownSkipReport;
 	cooldownVolumeReport;
 	drawableList_initInfo = {};
-	this->configFilePath = configFilePath;
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Set drawable lists layout
@@ -70,7 +70,7 @@ void core::MusicPlayer::init(std::vector<fs::path> musicDirPaths, DrawableList::
 		(int)core::DrawableList::DrawFullX // When this is set then use DrawableList::getPosX()
 	);
 	drawableList_initInfo.options             = listInitInfo_options;
-	drawableList_initInfo.style               = style;
+	drawableList_initInfo.style               = app->style.drawableList;
 	drawableList_initInfo.name                = "tracks";
 	drawableList_initInfo.columnLayout        = listInitInfo_columnLayout;
 	drawableList_initInfo.spaceBetweenColumns = 3;
@@ -80,7 +80,7 @@ void core::MusicPlayer::init(std::vector<fs::path> musicDirPaths, DrawableList::
 	///////////////////////////////////////////////////////////////////////////////
 	// Load music
 	///////////////////////////////////////////////////////////////////////////////
-	for (auto& musicDirPath : musicDirPaths) {
+	for (auto& musicDirPath : app->musicDirs) {
 		if (fs::exists(musicDirPath)) {
 			for (auto& it : fs::recursive_directory_iterator(musicDirPath)) {
 				addMusic(it.path().wstring()); // IMPORTANT use here u8string to support Dvořák, but for something like 音楽 you need wstring.
@@ -106,6 +106,13 @@ void core::MusicPlayer::init(std::vector<fs::path> musicDirPaths, DrawableList::
 		MusicInfo& musicInfo = musicInfoList[musicIndex];
 		allPlaylist.drawableList.push_back({ musicInfo.title, core::getTimeStr(musicInfo.duration) });
 	}
+	// Set duration:
+	allPlaylist.duration = 0s;
+	for (int musicIndex : allPlaylist.musicIndexList) {
+		MusicInfo& musicInfo = musicInfoList[musicIndex];
+		allPlaylist.duration += musicInfo.duration;
+	}
+	allPlaylist.oldTracksPlaytime = 0s;
 	playlists.push_back(allPlaylist);
 	drawnPlaylist = &playlists.back();
 
@@ -212,6 +219,13 @@ void core::MusicPlayer::addPlaylist(fs::path playlistFilePath)
 		MusicInfo& musicInfo = musicInfoList[musicIndex];
 		newPlaylist.drawableList.push_back({ musicInfo.title, core::getTimeStr(musicInfo.duration) });
 	}
+	// Set duration:
+	newPlaylist.duration = 0s;
+	for (int musicIndex : newPlaylist.musicIndexList) {
+		MusicInfo& musicInfo = musicInfoList[musicIndex];
+		newPlaylist.duration += musicInfo.duration;
+	}
+	newPlaylist.oldTracksPlaytime = 0s;
 	playlists.push_back(newPlaylist);
 	// Restore pointers:
 	for (Playlist& playlist : playlists) {
@@ -242,7 +256,6 @@ void core::MusicPlayer::addPlaylist(fs::path playlistFilePath)
 void core::MusicPlayer::terminate()
 {
 	stop();
-	musicDirPaths.clear();
 	musicInfoList.clear();
 	playlists.clear();
 	drawnPlaylist = nullptr;
@@ -332,15 +345,15 @@ void core::MusicPlayer::update()
 	// Update draw info
 	///////////////////////////////////////////////////////////////////////////////
 	//volume report:
-	if (cooldownVolumeReport.getElapsedTime().asSeconds() > 0.5f && volumeReport != "")
+	if (cooldownVolumeReport.getElapsedTime().asSeconds() > 0.5f && volumeReport.text != "")
 	{
-		volumeReport = core::Text();
+		volumeReport.text = "";
 		cooldownVolumeReport.restart();
 	}
 	//skip report:
-	if (cooldownSkipReport.getElapsedTime().asSeconds() > 0.5f && skipReport != "")
+	if (cooldownSkipReport.getElapsedTime().asSeconds() > 0.5f && skipReport.text != "")
 	{
-		skipReport = core::Text();
+		skipReport.text = "";
 		cooldownSkipReport.restart();
 	}
 }
@@ -373,7 +386,7 @@ void core::MusicPlayer::updateListSelection()
 void core::MusicPlayer::handleEvents()
 {
 	// Enter key (Select item):
-	if (drawnPlaylist && drawnPlaylist->drawableList.hasFocus() && core::inputDevice::isKeyPressed(inputDevice::Key::Enter))
+	if (drawnPlaylist && drawnPlaylist->drawableList.hasFocus() && core::inputDevice::isKeyPressed(app->keymap.get(Keymap::Action::Select).key))
 	{
 		drawnPlaylist->drawableList.selectHoveredItem();
 		int playlistMusicIndex = (int)drawnPlaylist->drawableList.getSelectedIndex();
@@ -387,90 +400,101 @@ void core::MusicPlayer::handleEvents()
 		}
 	}
 
-	// Up / Down key (or music finished):
+	// Up / Down key:
 	if (!isStopped()) {
-		if (inputDevice::isKeyPressed(inputDevice::Key::Up)) {
+		if (inputDevice::isKeyPressed(app->keymap.get(Keymap::Action::NextTrack).key)) {
 			play(true); // next
 		}
-		else if (inputDevice::isKeyPressed(inputDevice::Key::Down)) {
+		else if (inputDevice::isKeyPressed(app->keymap.get(Keymap::Action::PrevTrack).key)) {
 			play(false); // previous
 		}
 	}
 
 	// R-Key
-	if (inputDevice::isKeyPressed(inputDevice::Key::R)) {
+	if (inputDevice::isKeyPressed(app->keymap.get(Keymap::Action::Shuffle).key)) {
 		if (isShuffled()) resetShuffle();
 		else shuffle();
 
 		// Update config:
-		std::map<std::wstring, std::wstring> config = core::getConfig(configFilePath);
+		std::map<std::wstring, std::wstring> config = core::getConfig(app->configFilePath);
 		config[L"isPlaylistShuffled"] = isShuffled() ? L"true" : L"false";
-		core::setConfig(configFilePath, config);
+		core::setConfig(app->configFilePath, config);
 	}
 
 	// L-Key:
-	if (inputDevice::isKeyPressed(inputDevice::Key::L)) { // Loop key
+	if (inputDevice::isKeyPressed(app->keymap.get(Keymap::Action::Repeat).key)) { // Loop key
 		// ..select one of 3 modi
 		replayStatus = static_cast<Replay>((int)replayStatus + 1);
 		replayStatus = static_cast<Replay>((int)replayStatus % (int)Replay::Count); // wrap around
 
 		// Update config:
-		std::map<std::wstring, std::wstring> config = core::getConfig(configFilePath);
+		std::map<std::wstring, std::wstring> config = core::getConfig(app->configFilePath);
 		config[L"playlistLoop"] = replayStatus == Replay::None ? L"none" : (replayStatus == Replay::One ? L"one" : L"all");
-		core::setConfig(configFilePath, config);
+		core::setConfig(app->configFilePath, config);
 	}
 
 	// Left-Key:
-	if (!isStopped() && inputDevice::isKeyPressed(inputDevice::Key::Left))
+	core::Time skip_time = 10s;
+	std::string skipUnit = "s";
+	if (!isStopped() && inputDevice::isKeyPressed(app->keymap.get(Keymap::Action::TrackSkipBackward).key))
 	{
-		if (getPlayingMusicElapsedTime().asSeconds() < 5.f)
+		if (getPlayingMusicElapsedTime() < skip_time)
 		{
 			std::string skippedTimeText = std::to_string(getPlayingMusicElapsedTime().asSeconds());
-			skipReport = core::Text(" -" + skippedTimeText.substr(0, skippedTimeText.find(".") + 3) + "sec", core::Color::Light_Red);
-			if (replayStatus == Replay::One) skipTime(core::Time(-5s)); // will be 0
+			int decimalPos = skippedTimeText.find(".");
+			decimalPos = decimalPos == -1 ? skippedTimeText.find(",") : decimalPos;
+			decimalPos = decimalPos == -1 ? 0 : decimalPos;
+			skipReport.text = " -" + skippedTimeText.substr(0, decimalPos + 3) + skipUnit;
+			skipReport.isPositive = false;
+			if (replayStatus == Replay::One) skipTime(core::Time(core::Seconds((long)skip_time.asSeconds() * -1))); // will be 0
 			else play(false);
 		}
 		else
 		{
-			skipReport = core::Text(" -5sec", core::Color::Light_Red);
-			skipTime(core::Time(-5s));
+			skipReport.text = " -" + std::to_string((int)skip_time.asSeconds()) + skipUnit;
+			skipReport.isPositive = false;
+			skipTime(core::Time(core::Seconds((long)skip_time.asSeconds() * -1)));
 		}
 
 		cooldownSkipReport.restart();
 	}
 
 	// Right-Key:
-	if (!isStopped() && inputDevice::isKeyPressed(inputDevice::Key::Right))
+	if (!isStopped() && inputDevice::isKeyPressed(app->keymap.get(Keymap::Action::TrackSkipForward).key))
 	{
-		if (getPlayingMusicElapsedTime().asSeconds() > getPlayingMusicInfo().duration.asSeconds() - 5.f)
+		if (getPlayingMusicElapsedTime().asSeconds() > getPlayingMusicInfo().duration.asSeconds() - skip_time.asSeconds())
 		{
-			// ..there are no 5sec remaining
+			// ..there are no x sec remaining
 			core::Time skippedTime = getPlayingMusicInfo().duration - getPlayingMusicElapsedTime();
 			std::string skippedTimeText = std::to_string(skippedTime.asSeconds());
-			skipReport = core::Text(" +" + skippedTimeText.substr(0, skippedTimeText.find(".") + 3) + "sec", core::Color::Light_Green);
+			skipReport.text = " +" + skippedTimeText.substr(0, skippedTimeText.find(".") + 3) + skipUnit;
+			skipReport.isPositive = true;
 			if (replayStatus == Replay::One) skipTime(skippedTime); // Set music to the end, so it loops immediately.
 			else play(true);
 		}
 		else
 		{
-			skipReport = core::Text(" +5sec", core::Color::Light_Green);
-			skipTime(core::Time(5s));
+			skipReport.text = " +" + std::to_string((int)skip_time.asSeconds()) + skipUnit;
+			skipReport.isPositive = true;
+			skipTime(skip_time);
 		}
 
 		cooldownSkipReport.restart();
 	}
 
 	// +-Key:
-	if (inputDevice::isKeyPressed(inputDevice::Key::Plus))
+	if (inputDevice::isKeyPressed(app->keymap.get(Keymap::Action::IncreaseVolume).key))
 	{
 		if (getVolume() <= 95)
 		{
-			volumeReport = core::Text("+5%", core::Color::Light_Green);
+			volumeReport.text = "+5%";
+			volumeReport.isPositive = true;
 			setVolume(getVolume() + 5);
 		}
 		else
 		{
-			volumeReport = core::Text("+" + std::to_string(100 - static_cast<unsigned short>(getVolume())) + "%", core::Color::Light_Green);
+			volumeReport.text = "+" + std::to_string(100 - static_cast<unsigned short>(getVolume())) + "%";
+			volumeReport.isPositive = true;
 			setVolume(100);
 		}
 
@@ -478,16 +502,18 @@ void core::MusicPlayer::handleEvents()
 	}
 
 	// --Key:
-	if (inputDevice::isKeyPressed(inputDevice::Key::Minus))
+	if (inputDevice::isKeyPressed(app->keymap.get(Keymap::Action::DecreaseVolume).key))
 	{
 		if (getVolume() >= 5)
 		{
-			volumeReport = core::Text("-5%", core::Color::Light_Red);
+			volumeReport.text = "-5%";
+			volumeReport.isPositive = false;
 			setVolume(getVolume() - 5);
 		}
 		else
 		{
-			volumeReport = core::Text("-" + std::to_string(static_cast<unsigned short>(getVolume())) + "%", core::Color::Light_Red);
+			volumeReport.text = "-" + std::to_string(static_cast<unsigned short>(getVolume())) + "%";
+			volumeReport.isPositive = false;
 			setVolume(0);
 		}
 
@@ -495,7 +521,7 @@ void core::MusicPlayer::handleEvents()
 	}
 
 	// P-Key:
-	if (!isStopped() && inputDevice::isKeyPressed(inputDevice::Key::P))
+	if (!isStopped() && inputDevice::isKeyPressed(app->keymap.get(Keymap::Action::PlayPause).key))
 	{
 		if (isPlaying())
 		{
@@ -642,6 +668,12 @@ void core::MusicPlayer::play(bool next)
 	//	Mix_FadeOutMusic(10000);
 	//}
 	trackPlaytime.restart();
+
+	// Update duration:
+	activePlaylist->oldTracksPlaytime = 0s;
+	for (int i = 0; i < playingOrder_currentIndex; ++i) { // current music may not be calculated
+		activePlaylist->oldTracksPlaytime += musicInfoList[activePlaylist->musicIndexList[playingOrder[i]]].duration;
+	}
 }
 
 void core::MusicPlayer::resume()
@@ -676,6 +708,8 @@ void core::MusicPlayer::shuffle()
 	static std::random_device rd;
 	static auto rng = std::mt19937(rd());
 
+	isShuffled_ = true;
+
 	if (playingOrder.empty()) {
 		return;
 	}
@@ -696,7 +730,6 @@ void core::MusicPlayer::shuffle()
 		std::shuffle(std::begin(playingOrder) + 1, std::end(playingOrder), rng);
 		playingOrder_currentIndex = 0;
 	}
-	isShuffled_ = true;
 }
 
 void core::MusicPlayer::resetShuffle()
@@ -814,6 +847,21 @@ core::MusicPlayer::Replay core::MusicPlayer::getReplayStatus() const
 	return replayStatus;
 }
 
+core::Time core::MusicPlayer::getPlaytime() const
+{
+	return playtime.getElapsedTime();
+}
+
+core::MusicPlayer::Report core::MusicPlayer::getSkipReport() const
+{
+	return skipReport;
+}
+
+core::MusicPlayer::Report core::MusicPlayer::getVolumeReport() const
+{
+	return volumeReport;
+}
+
 int core::MusicPlayer::getActivePlaylistSize() const
 {
 	if (activePlaylist) {
@@ -828,6 +876,16 @@ int core::MusicPlayer::getActivePlaylistCurrentTrackNumber() const
 		return playingOrder_currentIndex + 1;
 	}
 	return 0;
+}
+
+core::Time core::MusicPlayer::getActivePlaylistDuration() const
+{
+	return activePlaylist->duration;
+}
+
+core::Time core::MusicPlayer::getActivePlaylistPlaytime() const
+{
+	return activePlaylist->oldTracksPlaytime + getPlayingMusicElapsedTime();
 }
 
 bool core::MusicPlayer::isPlaying() const

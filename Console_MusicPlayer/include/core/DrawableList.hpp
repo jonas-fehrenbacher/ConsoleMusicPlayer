@@ -6,20 +6,20 @@
 
 namespace core
 {
-	/* UI element */
+	/** UI element */
 	class DrawableList
 	{
 	public:
-		using Row = std::vector<std::string>; // list of columns
+		using Row = std::vector<std::string>; //< list of columns
 
 		enum Options
 		{
 			None              = 0,
-			SelectionMode     = 1 << 0, // you can select items in this mode, not just scroll.
-			ArrowInput        = 1 << 1, // You can scroll and use arrows
-			DrawCentered      = 1 << 2, // Box is drawed in the center of the console instead of one tab from the left; Either this or DrawFullX can be active
-			DrawFullX         = 1 << 3, // Draws on x axis completly; Either this or DrawCentered can be active
-			YSizeFitItemCount = 1 << 4  // Not implemented yet; List is as large as its item count, maximum is InitInfo::sizeInside::y.
+			SelectionMode     = 1 << 0, //< you can select items in this mode, not just scroll.
+			ArrowInput        = 1 << 1, //< You can scroll and use arrows
+			DrawCentered      = 1 << 2, //< Box is drawed in the center of the console instead of one tab from the left; Either this or DrawFullX can be active
+			DrawFullX         = 1 << 3, //< Draws on x axis completly; Either this or DrawCentered can be active
+			YSizeFitItemCount = 1 << 4  //< Not implemented yet; List is as large as its item count, maximum is InitInfo::sizeInside::y.
 		};
 
 		struct Style
@@ -60,7 +60,7 @@ namespace core
 			size_t              hover;                //< At which item should you start scrolling?
 		};
 
-		static const size_t NOINDEX; // -1 stands for no index (see 'selected')
+		static const size_t NOINDEX; //< -1 stands for no index (see 'selected')
 		Style style;
 
 		void init(InitInfo info);
@@ -71,12 +71,12 @@ namespace core
 
 		/** Use DrawableList::NOINDEX to select nothing. */
 		void select(int index);
-		/* ScrollableList does not selected elements, the user has to do this. */
+		/** ScrollableList does not selected elements, the user has to do this. */
 		void selectHoveredItem();
 		void clear();
 		void push_back(Row item);
 		void onConsoleResize();
-		/* No event handling and no update(). draw() is active, but selection will be ignored. Resets isTrapped flags. */
+		/** No event handling and no update(). draw() is active, but selection will be ignored. Resets isTrapped flags. */
 		void loseFocus();
 		void gainFocus();
 		void scrollToTop();
@@ -87,12 +87,12 @@ namespace core
 		size_t getHoverIndex() const;
 		Row getHover() const;
 		const std::vector<Row>& get() const;
-		/* return length of the drawn box in character column count. Note that this ignores the tab and Scrollbar - its just the border. */
+		/** return length of the drawn box in character column count. Note that this ignores the tab and Scrollbar - its just the border. */
 		int getDrawSize() const;
 		int getPosX() const;
-		/* User is on the top and scrolls up, but can not leave the list. */
+		/** User is on the top and scrolls up, but can not leave the list. */
 		bool isTrappedOnTop() const;
-		/* User is on the bottom and scrolls down, but can not leave the list. */
+		/** User is on the bottom and scrolls down, but can not leave the list. */
 		bool isTrappedOnBottom() const;
 		bool hasFocus() const;
 	private:
@@ -106,12 +106,12 @@ namespace core
 		bool                     isTrappedOnTop_;
 		bool                     isTrappedOnBottom_;
 		bool                     hasFocus_;
-		int                      posX; // draw position on the x axis (in characters)
+		int                      posX; //< draw position on the x axis (in characters)
 		std::string              name;
 		int                      spaceBetweenColumns;
 		std::vector<Column>      columnLayout;
-		int                      paddingX; // Space between border and column (padding on x axis); Style!?
-		bool                     isFirstDraw; // optional, but save
+		int                      paddingX; //< Space between border and column (padding on x axis); Style!?
+		bool                     isFirstDraw; //< optional, but save
 
 		void move(bool up);
 		void drawBorder(bool isTop) const;

@@ -14,22 +14,22 @@ namespace core
 	enum MessageID
 	{
 		CONSOLE_RESIZE = 0,
-		CUSTOM_MESSAGE // Use this to declare custom messages [ enum { First = core::MessageID::CUSTOM_MESSAGE, ... } ] 
+		CUSTOM_MESSAGE //< Use this to declare custom messages [ enum { First = core::MessageID::CUSTOM_MESSAGE, ... } ] 
 	};
 
 	class MessageBus
 	{
 	public:
-		/* UserData will be automatically freed. */
+		/** UserData will be automatically freed. */
 		void send(int messageID, void* userData = nullptr);
-		/* returns receiver id for remove() */
+		/** returns receiver id for remove() */
 		long long add(std::function<void(Message)> receiver);
 		void remove(long long receiverID);
 		void update();
 	private:
 		struct Receiver
 		{
-			long long                    id; // neccessary because std::function has no operator==
+			long long                    id; //< neccessary because std::function has no operator==
 			std::function<void(Message)> func;
 		};
 

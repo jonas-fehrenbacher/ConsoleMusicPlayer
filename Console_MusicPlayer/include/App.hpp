@@ -6,6 +6,7 @@
 #include "NavBar.hpp"
 #include "PlayStatus.hpp"
 #include "Footer.hpp"
+#include "Keymap.hpp"
 #include "core/Timer.hpp"  
 #include "core/StateMachine.hpp"
 #include "core/MessageBus.hpp"
@@ -52,6 +53,7 @@ public:
 	NavBar                navBar;
 	PlayStatus            playStatus;
 	Footer                footer;
+	Keymap                keymap;
 
 	explicit App();
 	explicit App(const App& other) = delete;
@@ -60,7 +62,9 @@ public:
 	void draw();
 	void handleEvents();
 	void onMessage(core::Message message);
+	core::Time getFrametime();
 private:
 	core::Timer drawTimer;
+	core::Time  frametime;
 	void terminate();
 };

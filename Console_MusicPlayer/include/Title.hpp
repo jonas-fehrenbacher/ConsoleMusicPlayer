@@ -11,14 +11,18 @@ public:
 	{
 		core::Color background;
 		core::Color title;
+		core::Color trackName;
 		core::Color trackNumber;
+		core::Color playlistName;
 		core::Color keyInfo;
 		core::Color exitSymbol;
 		core::Color lockStatus;
 	};
 
 	void init(App* app);
+	void update();
 	void draw();
 private:
-	App* app;
+	App*        app;
+	std::string playlistName;
 };

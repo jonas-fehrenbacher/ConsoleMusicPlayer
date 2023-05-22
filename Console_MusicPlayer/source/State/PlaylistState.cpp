@@ -115,7 +115,7 @@ void PlaylistState::handleEvent()
 	///////////////////////////////////////////////////////////////////////////////
 	// Back key
 	///////////////////////////////////////////////////////////////////////////////
-	if (core::inputDevice::isKeyPressed(core::inputDevice::Key::B)) {
+	if (core::inputDevice::isKeyPressed(app->keymap.get(Keymap::Action::Back).key)) {
 		state = State::PlaylistList;
 		app->musicPlayer.setDrawnPlaylist("");
 	}
@@ -124,10 +124,10 @@ void PlaylistState::handleEvent()
 	{
 		playlistList.handleEvent();
 
-		if (playlistList.hasFocus() && core::inputDevice::isKeyPressed(core::inputDevice::Key::Enter))
+		if (playlistList.hasFocus() && core::inputDevice::isKeyPressed(app->keymap.get(Keymap::Action::Select).key))
 		{
 			// Clear the key state, so that musicPlayer does not automatically play the first / hovered track.
-			core::inputDevice::clearKeyState(core::inputDevice::Key::Enter);
+			core::inputDevice::clearKeyState(app->keymap.get(Keymap::Action::Select).key);
 
 			// Note: Hovered item is here not selected, because only playing playlists are selected.
 			std::string selectedPlaylistName = playlistList.getHoverIndex() == core::DrawableList::NOINDEX ? "" : playlistList.getHover()[0] + ".pl";

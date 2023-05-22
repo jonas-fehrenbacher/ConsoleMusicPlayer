@@ -20,7 +20,7 @@ void NavBar::handleEvents()
 	///////////////////////////////////////////////////////////////////////////////
 	// Jump to navigation bar
 	///////////////////////////////////////////////////////////////////////////////
-	if (core::inputDevice::isKeyPressed(core::inputDevice::Key::O)) {
+	if (core::inputDevice::isKeyPressed(app->keymap.get(Keymap::Action::SelectNavBar).key)) {
 		hover = Option::First;
 		app->messageBus.send(Message::NAVBAR_SHORTCUT_TRIGGERED); // Every state needs to listen to this and set themselves off focus.
 		// Alternative: set a flag 'bool isShortcutTriggered()' - reset this if 'O' is not pressed.
@@ -29,7 +29,7 @@ void NavBar::handleEvents()
 	///////////////////////////////////////////////////////////////////////////////
 	// Navigation bar slection
 	///////////////////////////////////////////////////////////////////////////////
-	if (isInsideNavBar() && core::inputDevice::isKeyPressed(core::inputDevice::Key::Enter))
+	if (isInsideNavBar() && core::inputDevice::isKeyPressed(app->keymap.get(Keymap::Action::Select).key))
 	{
 		selected = hover;
 		hover    = Option::None; // Jump into the option
@@ -106,7 +106,7 @@ void NavBar::draw()
 	core::console::setBgColor(style.background);
 
 	// options:
-	std::string optionsKeyInfo = app->isDrawKeyInfo ? "[O] " : "";
+	std::string optionsKeyInfo = app->isDrawKeyInfo ? "[" + app->keymap.get(Keymap::Action::SelectNavBar).symbol + "] " : "";
 	int optionSpaceInbetween = 3;
 	int optionsSize = 0;
 	for (int i = 0; i < options.size(); ++i) optionsSize += options[i].size();

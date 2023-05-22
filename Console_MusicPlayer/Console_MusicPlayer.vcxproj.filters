@@ -97,6 +97,9 @@
     <ClInclude Include="include\PlayStatus.hpp">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="include\Keymap.hpp">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\core\MessageBus.cpp">
@@ -154,6 +157,9 @@
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="source\NavBar.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Keymap.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>

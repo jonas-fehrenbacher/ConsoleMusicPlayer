@@ -5,7 +5,8 @@
 #include <string>
 class App;
 
-class NavBar // Navigation bar
+/** Navigation bar */
+class NavBar
 {
 public:
 	enum Option
@@ -14,7 +15,7 @@ public:
         Playlists   = 1,
         Directories = 2,
 
-        None  = 3, // If 'hover' is equal 'None', then we are currently in the music list, playlist list or directory list.
+        None  = 3, //< If 'hover' is equal 'None', then we are currently in the music list, playlist list or directory list.
         First = 0,
         Last  = 2
     };
@@ -36,8 +37,8 @@ public:
 private:
 	App*                       app;
 	std::array<std::string, 3> options;
-	Option                     selected; // this item is selected
-	Option                     hover; // over this item do we hover
+	Option                     selected; //< this item is selected
+	Option                     hover; //< over this item do we hover
 
 	bool isInsideNavBar();
 };

@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <vector>
 namespace fs = std::filesystem;
+class App;
 
 namespace core
 {
@@ -26,7 +27,7 @@ namespace core
 	class MusicPlayer
 	{
 	public:
-		/* flags */
+		/** flags */
 		enum Options
 		{
 			Shuffle   = 1 << 0,
@@ -38,9 +39,9 @@ namespace core
 
 		enum class Replay
 		{
-			None  = 0, // Loop deactivated
-			One   = 1, // Loop currently playing music
-			All   = 2, // Loop playlist - all tracks
+			None  = 0, //< Loop deactivated
+			One   = 1, //< Loop currently playing music
+			All   = 2, //< Loop playlist - all tracks
 			Count = 3
 		};
 
@@ -53,13 +54,15 @@ namespace core
 			Time                  duration;
 		};
 
+		struct Report
+		{
+			std::string text;
+			bool        isPositive; // isPositive == false, then it is negative (time, volume)
+		};
+
 		static const std::string ALL_PLAYLIST_NAME;
 
-		// Deprecated:
-		core::Text skipReport;
-		core::Text volumeReport;
-
-		void init(std::vector<fs::path> musicDirPaths, DrawableList::Style style, fs::path configFilePath, int options = 0, Time sleepTime = 0ns);
+		void init(App* app, int options = 0, Time sleepTime = 0ns);
 		void terminate();
 		/** Does nothing if playlist is already added. */
 		void addPlaylist(fs::path playlistFilePath);
@@ -70,7 +73,7 @@ namespace core
 		void resume();
 		void pause();
 		void stop();
-		/* Shuffle everything and currently playing music is the first entry. */
+		/** Shuffle everything and currently playing music is the first entry. */
 		void shuffle();
 		/** Only resets list order. Music is still played from index 0 to n, so this could cause that some music is played twice or never. */
 		void resetShuffle();
@@ -84,14 +87,19 @@ namespace core
 		/** playlistName can be emptry to display nothing. */
 		void setDrawnPlaylist(std::string playlistName = "");
 		void setVolume(float volume);
-		/* Music may also be paused. */
+		/** Music may also be paused. */
 		const MusicInfo& getPlayingMusicInfo() const;
 		const Time getPlayingMusicElapsedTime() const;
 		std::string getActivePlaylistName() const;
 		int getActivePlaylistSize() const;
 		int getActivePlaylistCurrentTrackNumber() const;
+		Time getActivePlaylistDuration() const;
+		Time getActivePlaylistPlaytime() const;
 		float getVolume() const;
 		Replay getReplayStatus() const;
+		Time getPlaytime() const;
+		Report getSkipReport() const;
+		Report getVolumeReport() const;
 		bool isPlaying() const;
 		bool isPaused() const;
 		bool isStopped() const;
@@ -104,10 +112,12 @@ namespace core
 			std::string      name;
 			std::vector<int> musicIndexList; //< music index from musicInfoList
 			DrawableList     drawableList; //< is in the order of the currently playing playlist; Is in 'Playlist', so that unactive playlists can be drawn.
+			Time             duration;
+			Time             oldTracksPlaytime; //< playtime of all tracks till now; add getPlayingMusicElapsedTime() to get the playtime; max is 'duration'
 		};
 
+		App*                           app;
 		Mix_Music*                     music; // currently playing music
-		std::vector<fs::path>          musicDirPaths;
 		std::vector<MusicInfo>         musicInfoList; //< contains all found music files.
 		std::vector<Playlist>          playlists;
 		Playlist*                      activePlaylist; //< currently active playlist
@@ -125,12 +135,13 @@ namespace core
 		core::Timer                    cooldownSkipReport;
 		core::Timer                    cooldownVolumeReport;
 		core::DrawableList::InitInfo   drawableList_initInfo;
-		fs::path                       configFilePath;
+		Report                         skipReport;
+		Report                         volumeReport;
 
 		void addMusic(std::filesystem::path musicFilePath);
-		/* return playing music index from Playlist::musicIndexList */
+		/** return playing music index from Playlist::musicIndexList */
 		int getPlaylistPlayingMusicIndex() const;
-		/* return playing music index from MusicPlayer::musicInfoList */
+		/** return playing music index from MusicPlayer::musicInfoList */
 		int getPlayingMusicIndex() const;
 		void play(bool next);
 		void skipTime(Time time);

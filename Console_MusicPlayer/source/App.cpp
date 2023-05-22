@@ -151,7 +151,39 @@ App::App() :
 		ofs.close();
 		// "D:/Data/Music/", "C:/Users/Jonas/Music/", "music/"
 	}
-	std::map<std::wstring, std::wstring> config = core::getConfig("data/config.properties");
+	std::map<std::wstring, std::wstring> config = core::getConfig(configFilePath);
+	// Create keymap:
+	if (!fs::exists("data/keymap.properties")) {
+		ofs.open("data/keymap.properties");
+		ofs << "# A = 0, B = 1, C = 2, D = 3, E = 4, F = 5, G = 6, H = 7, I = 8, J = 9, K = 10, L = 11, M = 12, N = 13, O = 14, P = 15, Q = 16, R = 17, S = 18, T = 19, U = 20, V = 21, W = 22, X = 23, Y = 24, Z = 25,\n"
+			<< "# Num0 = 26, Num1 = 27, Num2 = 28, Num3 = 29, Num4 = 30, Num5 = 31, Num6 = 32, Num7 = 33, Num8 = 34, Num9 = 35,\n"
+			<< "# Escape = 36, LControl = 37, LShift = 38, LAlt = 39, LSystem = 40, RControl = 41, RShift = 42, RAlt = 43, RSystem = 44, Menu = 45,\n"
+			<< "# LBracket = 46, RBracket = 47, Semicolon = 48, Comma = 49, Period = 50, Quote = 51, Slash = 52, Backslash = 53, Tilde = 54, Equal = 55, Plus = 56, Minus = 57, Space = 58, Enter = 59, Backspace = 60, Tab = 61,\n"
+			<< "# PageUp = 62, PageDown = 63, End = 64, Home = 65, Insert = 66, Delete = 67,\n"
+			<< "# Left = 68, Right = 69, Up = 70, Down = 71,\n"
+			<< "# NumpadAdd = 72, NumpadSubtract = 73, NumpadMultiply = 74, NumpadDivide = 75, NumpadSeperator = 76, NumpadDecimal = 77,\n"
+			<< "# Numpad0 = 78, Numpad1 = 79, Numpad2 = 80, Numpad3 = 81, Numpad4 = 82, Numpad5 = 83, Numpad6 = 84, Numpad7 = 85, Numpad8 = 86, Numpad9 = 87,\n"
+			<< "# F1 = 88, F2 = 89, F3 = 90, F4 = 91, F5 = 92, F6 = 93, F7 = 94, F8 = 95, F9 = 96, F10 = 97, F11 = 98, F12 = 99, F13 = 100, F14 = 101, F15 = 102,\n"
+			<< "# Pause = 103,\n"
+			<< "# MediaNextTrack = 104, MediaPrevTrack = 105, MediaStop = 106, MediaPlayPause = 107,\n"
+			<< "\n"
+			<< "Exit = 36\n"
+			<< "Back = 1\n"
+			<< "PrevTrack = 71\n"
+			<< "NextTrack = 70\n"
+			<< "LockInput = 99\n"
+			<< "SelectNavBar = 14\n"
+			<< "PlayPause = 15\n"
+			<< "Shuffle = 17\n"
+			<< "IncreaseVolume = 56\n"
+			<< "DecreaseVolume = 57\n"
+			<< "Repeat = 11\n"
+			<< "TrackSkipBackward = 68\n"
+			<< "TrackSkipForward = 69\n"
+			<< "KeyInfo = 10\n"
+			<< "Select = 59\n";
+		ofs.close();
+	}
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Init music dirs
@@ -171,7 +203,7 @@ App::App() :
 		(config[L"isPlaylistShuffled"] == L"true" ? core::MusicPlayer::Shuffle : 0) |
 		(config[L"playlistLoop"] == L"none" ? 0 : (config[L"playlistLoop"] == L"one" ? core::MusicPlayer::LoopOne : core::MusicPlayer::LoopAll)) |
 		core::MusicPlayer::FadeOut;
-	musicPlayer.init(musicDirs, style.drawableList, configFilePath, musicPlayer_options, musicPlayer_sleepTime);
+	musicPlayer.init(this, musicPlayer_options, musicPlayer_sleepTime);
 	// Add all playlists:
 	for (auto& it : fs::directory_iterator("data")) {
 		if (it.is_regular_file() && it.path().extension() == ".pl") {
@@ -187,6 +219,7 @@ App::App() :
 	navBar.init(this);
 	playStatus.init(this);
 	footer.init(this);
+	keymap.init();
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Init states
@@ -222,12 +255,14 @@ App::Style getStyle()
 	style.drawableList.selected            = core::Color::Green;
 	style.drawableList.hover               = core::Color::Bright_White;
 	// Title:
-	style.title.background  = core::Color::Bright_White;
-	style.title.title       = core::Color::Black;
-	style.title.trackNumber = core::Color::Black;
-	style.title.keyInfo     = core::Color::White;
-	style.title.exitSymbol  = core::Color::Gray;
-	style.title.lockStatus  = core::Color::Gray;
+	style.title.background   = core::Color::Bright_White;
+	style.title.title        = core::Color::Black;
+	style.title.trackName    = core::Color::Gray;
+	style.title.trackNumber  = core::Color::Aqua;
+	style.title.playlistName = core::Color::Black;
+	style.title.keyInfo      = core::Color::White;
+	style.title.exitSymbol   = core::Color::Gray;
+	style.title.lockStatus   = core::Color::Gray;
 	// NavBar:
 	style.navBar.background    = core::Color::Bright_White;
 	style.navBar.keyInfo       = core::Color::White;
@@ -235,11 +270,18 @@ App::Style getStyle()
 	style.navBar.item_hover    = { core::Color::Black, core::Color::White };
 	style.navBar.item_selected = { core::Color::Bright_White, core::Color::Gray };
 	// PlayStatus:
-	style.playStatus.statusOn                = core::Color::Green;
-	style.playStatus.statusOff               = core::Color::Gray;
-	style.playStatus.durationProgressBar     = core::Color::White;
-	style.playStatus.durationProgressBarText = core::Color::Black;
-	style.playStatus.durationText            = core::Color::Black;
+	style.playStatus.background               = core::Color::Gray;
+	style.playStatus.statusOn                 = core::Color::Green;
+	style.playStatus.statusOff                = core::Color::Gray;
+	style.playStatus.durationProgressBar      = core::Color::White;
+	style.playStatus.progressBar_durationText = core::Color::Black;
+	style.playStatus.durationText             = core::Color::Black;
+	style.playStatus.progressBar_label        = core::Color::Gray;
+	style.playStatus.label                    = core::Color::White;
+	style.playStatus.skipForwardReport        = core::Color::Green; 
+	style.playStatus.skipBackwardReport       = core::Color::Red;
+	style.playStatus.volumePlusReport         = core::Color::Green;
+	style.playStatus.volumeMinusReport        = core::Color::Red;
 	// Footer:
 	style.footer.background      = core::Color::White;
 	style.footer.keyShortcut     = { core::Color::Bright_White, core::Color::Aqua };
@@ -387,12 +429,9 @@ void App::mainLoop()
 
 		update();
 
-		if (drawTimer.getElapsedTime() >= 250ms) {
-			// The more you draw, the less frequent handleEvent is called and it happens that keys are missed (maybe use somehow SDL...)
-			core::console::clearScreen();
-			draw();
-			drawTimer.restart();
-		}
+		core::console::clearScreen();
+		draw();
+		frametime = drawTimer.restart(); // ~160ms
 	}
 
 	// Terminate:
@@ -406,6 +445,7 @@ void App::update()
 	// maybe update musicDirs (optional)
 	core::inputDevice::update();
 	musicPlayer.update();
+	title.update();
 }
 
 void App::handleEvents()
@@ -413,21 +453,21 @@ void App::handleEvents()
 	///////////////////////////////////////////////////////////////////////////////
 	// Exit
 	///////////////////////////////////////////////////////////////////////////////
-	if (core::inputDevice::isKeyPressed(core::inputDevice::Key::Escape)) {
+	if (core::inputDevice::isKeyPressed(keymap.get(Keymap::Action::Exit).key)) {
 		isRunning = false;
 	}
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Lock
 	///////////////////////////////////////////////////////////////////////////////
-	if (core::inputDevice::isKeyPressed(core::inputDevice::Key::F12, true)) {
+	if (core::inputDevice::isKeyPressed(keymap.get(Keymap::Action::LockInput).key, true)) {
 		core::inputDevice::lock(!core::inputDevice::isLocked());
 	}
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Hide key
 	///////////////////////////////////////////////////////////////////////////////
-	if (core::inputDevice::isKeyPressed(core::inputDevice::Key::K)) {
+	if (core::inputDevice::isKeyPressed(keymap.get(Keymap::Action::KeyInfo).key)) {
 		isDrawKeyInfo = !isDrawKeyInfo;
 	}
 
@@ -462,4 +502,9 @@ void App::onMessage(core::Message message)
 		else if (option == NavBar::Option::Playlists)   activeState.set(&playlistState);
 		else if (option == NavBar::Option::Directories) activeState.set(&directoryState);
 	}
+}
+
+core::Time App::getFrametime()
+{
+	return frametime;
 }

@@ -35,7 +35,7 @@ namespace core::console
 		Bright_White,
 		// Max: 256 (16*16), 16 different foregrounds on 16 different backgrounds.
 
-		None // If Color is None, then the default console color will be used.
+		None //< If Color is None, then the default console color will be used.
 	};
 
 	struct FullColor
@@ -44,7 +44,7 @@ namespace core::console
 		Color bg;
 	};
 
-	/*
+	/**
 	 * Use this when consoled is "cleared" by setting the console cursor to the top.
 	 * Actually console is not cleared at all and cursor is just at the top, ready to overwrite everything previously
 	 * in the screen buffer. core::endl() adds white spaces ' ' to the line till the end, so that everything that was
@@ -55,14 +55,22 @@ namespace core::console
 	 */
 	struct endl
 	{
+		enum class Mod //< modification
+		{
+			None,
+			ForceLastCharDraw
+		};
+
 		int   count; // < how many end lines it should make.
 		Color bgcolor;
+		Mod   forceLastCharDraw; //< Forces core::endl to overdraw the last character. This is unsave can lead to console wrapping. The problem is that after the last character is drawn the console cursor does not advance, thus it is unknown for the system if last character is already printed.
 
 		endl();
-		endl(int count, Color bgcolor = Color::None);
+		endl(int count, Color bgcolor = Color::None, Mod forceLastCharDraw = Mod::None);
 		endl(Color bgcolor);
+		endl(Mod forceLastCharDraw);
 	};
-	/*
+	/**
 	 * A normal tab (\t) draws nothing and the console cursor just jumps forward. With my clear routine this would allow
 	 * old draws to be seen. core::tab() just draws eight white spaces, thus overdrawing old frames / text.
 	 * Colored tab: std::cout << core::tab{ core::Color::White };
@@ -76,7 +84,7 @@ namespace core::console
 		tab(Color bgcolor);
 	};
 
-	/* std::cout colored string. If no color is specified the default will be taken. */
+	/** std::cout colored string. If no color is specified the default will be taken. */
 	class Text
 	{
 	public:
@@ -104,21 +112,23 @@ namespace core::console
 	void init();
 	void reset();
 	void clearScreen();
-	/* Is expensive and causes screen stutter if called frequently. */
+	/** Is expensive and causes screen stutter if called frequently. */
 	void hardClearScreen();
-	/* adjustScreenbuffer: Adjust screen buffer, so that it fits the window size (otherwise there might be a scrollbar). */
+	/** adjustScreenbuffer: Adjust screen buffer, so that it fits the window size (otherwise there might be a scrollbar). */
 	void setSize(unsigned int width, unsigned int height, bool adjustScreenbuffer);
 	void setPos(unsigned int x, unsigned int y);
 	void setCursorPos(Vec2 pos);
-	/* Font name can be anything windows knows: "Lucida Sans Unicode" for unicode or "Consolas". */
+	/** Font name can be anything windows knows: "Lucida Sans Unicode" for unicode or "Consolas". */
 	void setFont(std::wstring fontName, short size = 27);
 	void setTitle(std::string title);
 	void setFgColor(Color color);
 	void setBgColor(Color color);
-	/* return screen buffer character count (row and column count). If there is a scrollbar, then this is
-		not equal to the window character count. */
+	/** 
+	 * return screen buffer character count (row and column count). If there is a scrollbar, then this is
+	 * not equal to the window character count. 
+	 */
 	Vec2 getCharCount();
-	/* retun console cursor position in character row and column count. Note that is not the same as the mouse cursor. */
+	/** retun console cursor position in character row and column count. Note that is not the same as the mouse cursor. */
 	Vec2 getCursorPos();
 	Color getFgColor();
 	Color getBgColor();

@@ -21,7 +21,7 @@ void Footer::draw()
 	for (int i = core::console::getCursorPos().y; i < lineCount - 1; ++i) {
 		std::cout << core::endl();
 	}
-	std::cout << " " << core::Text(" k ", style.keyShortcut.fg, style.keyShortcut.bg)
+	std::cout << " " << core::Text(" " + app->keymap.get(Keymap::Action::KeyInfo).symbol + " ", style.keyShortcut.fg, style.keyShortcut.bg)
 		<< core::Text(app->isDrawKeyInfo ? " hide keys" : " show keys", style.keyShortcutText);
 	std::cout << std::string(core::console::getCharCount().x - core::console::getCursorPos().x, ' ');
 }

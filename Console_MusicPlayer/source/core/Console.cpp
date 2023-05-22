@@ -344,29 +344,53 @@ std::wostream& operator<<(std::wostream& stream, const core::console::tab& _tab)
 
 core::console::endl::endl() :
 	count(1),
-	bgcolor(Color::None)
+	bgcolor(Color::None),
+	forceLastCharDraw(Mod::None)
 {
 
 }
 
-core::console::endl::endl(int count, console::Color bgcolor /*= Color::None*/) :
+core::console::endl::endl(int count, console::Color bgcolor /*= Color::None*/, Mod forceLastCharDraw /*= Mod::None*/) :
 	count(count),
-	bgcolor(bgcolor)
+	bgcolor(bgcolor),
+	forceLastCharDraw(forceLastCharDraw)
 {
 
 }
 
 core::console::endl::endl(Color bgcolor) :
 	count(1),
-	bgcolor(bgcolor)
+	bgcolor(bgcolor),
+	forceLastCharDraw(Mod::None)
+{
+
+}
+
+core::console::endl::endl(Mod forceLastCharDraw) :
+	count(1),
+	bgcolor(Color::None),
+	forceLastCharDraw(forceLastCharDraw)
 {
 
 }
 
 std::ostream& operator<<(std::ostream& stream, const core::console::endl& endl)
 {
+	// Console wrap:
+	// If Console screen buffer and console size is the same, then nothing can be drawn "behind the scene".
+	// If you draw 'std::string(core::console::getCharCount().x + 1, '#')' to the console, then the last
+	// character, which does not find in the console line will be printed to the next line: The console
+	// automatically wraps the output! But it does not creates a new line, because if you resize the
+	// console, so that it is larger, then the character will be drawn as expected.
+
 	for (int i = 0; i < endl.count; ++i) {
-		int fillLength = core::console::getCharCount().x - core::console::getCursorPos().x;
+		int cursorPos = core::console::getCursorPos().x;
+		if (endl.forceLastCharDraw != core::endl::Mod::ForceLastCharDraw && cursorPos == core::console::getCharCount().x - 1) { // cursor position starts at 0 and console char count at 1
+			// ..console cursor position is unknown (if screen buffer is same as console size) and we want to prevent console wrapping
+			// With this the last character may not be over drawn and fragments from the old draw call can stay around: The solution is to manually set 'ForceLastCharDraw'.
+			cursorPos = core::console::getCharCount().x;
+		}
+		int fillLength = core::console::getCharCount().x - cursorPos;
 		std::string postStr(fillLength, ' ');
 		std::cout << core::console::Text(postStr, core::console::Color::White, endl.bgcolor) << "\n";
 	}
